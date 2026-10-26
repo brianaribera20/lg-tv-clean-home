@@ -72,6 +72,8 @@ int main(int argc,char**argv){
  if(p[1].revents&POLLIN){char b[64];ssize_t n=read(0,b,sizeof b);if(n<=0){reason=24;break;}last=ms();for(int i=0;i<n;i++){if(b[i]=='D'){f.disabled=1;f.home=0;f.count=0;}if(b[i]=='E'){f.disabled=0;f.home=0;f.count=0;}if(b[i]=='Q')stop=1;if(b[i]=='S')raise(SIGSTOP);}puts("P");}
  if(p[0].revents&(POLLHUP|POLLERR)){reason=25;break;}
  if(p[0].revents&POLLIN){struct ev e[64];ssize_t n=read(in,e,sizeof e);if(n<0&&errno==EAGAIN)continue;if(n<=0||n%sizeof e[0]){reason=26;break;}for(int i=0;i<n/(int)sizeof e[0];i++){/* Observe Back without consuming or changing its events. */
+/* Report remote activity (a key press or pointer movement), at most every 3 s, for the idle timers. */
+if((e[i].type==1&&e[i].value==1)||e[i].type==2){static uint64_t act;uint64_t t=ms();if(t-act>3000){act=t;puts("ACT");}}
 if(e[i].type==1&&e[i].code==412){if(e[i].value==1)puts("BACK_DOWN");if(e[i].value==0)puts("BACK_UP");}
 int a=filter_event(&f,e+i,ms());if(a==RELEASE){reason=27;stop=1;break;}if(a==OPEN_HOME){puts("HOME");continue;}if(a==DROP)continue;if(write(out,e+i,sizeof e[i])!=sizeof e[i]){reason=28;stop=1;break;}}}
  }

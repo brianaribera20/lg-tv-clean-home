@@ -1,5 +1,6 @@
 'use strict';
-// Same-package UI endpoint; the existing helper data directory is prisoner:jailer 0770.
+// Same-package UI endpoint. Requests go through the helper's shared ipc/ folder (0777, files 0666):
+// its state/ folder is private to the helper's user, which this service is not.
 // Fixed request/response files avoid granting the launcher new cross-package bus access.
 module.exports=function(fs,dir,options){
  options=options||{};
@@ -17,8 +18,8 @@ module.exports=function(fs,dir,options){
    try{
     var request={id:id,method:method,expires:deadline};
     if(method==='setHomeControl')request.enabled=payload.enabled;
-    fs.writeFileSync(dir+'/home-request.tmp',JSON.stringify(request),{mode:432});
-    fs.chmodSync(dir+'/home-request.tmp',432);
+    fs.writeFileSync(dir+'/home-request.tmp',JSON.stringify(request),{mode:438});
+    fs.chmodSync(dir+'/home-request.tmp',438);
     fs.renameSync(dir+'/home-request.tmp',dir+'/home-request.json');
    }catch(e){finish({returnValue:false,errorText:'Home Helper data unavailable'});return;}
    function poll(){

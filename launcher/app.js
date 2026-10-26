@@ -11,7 +11,7 @@
   }
   // Shared layout, focus and remote-control state.
   var DOCK_TOP = 680,
-    DOCK_HEIGHT = 258,
+    DOCK_HEIGHT = 290,
     CARD_HEIGHT = 202,
     TILE_BASE = DOCK_TOP + Math.round((DOCK_HEIGHT - CARD_HEIGHT) / 2),
     HERO_OFFSET = 176;
@@ -585,7 +585,8 @@
           }(t);
         } catch (e) {}
         var r = null;
-        a && a[3] > 200 ? e.card.style.background = "rgb(" + a[0] + "," + a[1] + "," + a[2] + ")" : (e.card.classList.add("glyph"), e.card.style.background = tileBackground(e.app.iconColor), r = "#2c2c2e" === tileBackground(e.app.iconColor) ? null : parseHexColor(e.app.iconColor));
+        // Wide art from make-tiles.py already fills the card; the TV cannot sample local pixels, so trust iconColor.
+        a && a[3] > 200 ? e.card.style.background = "rgb(" + a[0] + "," + a[1] + "," + a[2] + ")" : t.naturalWidth > 1.5 * t.naturalHeight ? (e.card.style.background = e.app.iconColor || "#1c1c1e", r = parseHexColor(e.app.iconColor)) : (e.card.classList.add("glyph"), e.card.style.background = tileBackground(e.app.iconColor), r = "#2c2c2e" === tileBackground(e.app.iconColor) ? null : parseHexColor(e.app.iconColor));
         e.color = r || (n ? function (e) {
           for (var t = null, n = -1, a = [0, 0, 0], i = 0, o = 0; o < e.length; o += 4) if (!(e[o + 3] < 128)) {
             var r = [e[o], e[o + 1], e[o + 2]];
@@ -645,9 +646,9 @@
     var dockBand = getElement("dockBand"),
       dockCount = Math.min(columnCount, tiles.length);
     dockBand.style.display = dockCount ? "block" : "none";
-    dockBand.style.left = tileLeft(0) - 28 + "px";
+    dockBand.style.left = tileLeft(0) - 50 + "px";
     dockBand.style.top = DOCK_TOP + "px";
-    dockBand.style.width = (dockCount - 1) * columnWidth + 360 + 56 + "px";
+    dockBand.style.width = (dockCount - 1) * columnWidth + 360 + 100 + "px";
     dockBand.style.height = DOCK_HEIGHT + "px";
   }
   function animateTiles() {
@@ -709,8 +710,9 @@
       var header = document.querySelector("header"),
         headerBottom = header.offsetTop + header.offsetHeight;
       document.body.classList.toggle("scrolled", DOCK_TOP - scrollOffset < headerBottom + 24);
-      var glassWidth = 1.1 * 360 + 24,
-        glassHeight = 1.1 * 202 + 24,
+      // Even 12px ring around the lifted tile (scale 1.08 in apple.css), ~24px inside the dock shelf.
+      var glassWidth = 1.08 * 360 + 24,
+        glassHeight = 1.08 * 202 + 24,
         glassLeft = tileLeft(index) + 180 - glassWidth / 2,
         glassTop = top + 101 - glassHeight / 2;
       focusGlass.style.width = glassWidth + "px";
@@ -732,6 +734,7 @@
         updateAmbient(e.color);
       }(tiles[index]) : heroVisible && (heroVisible = false, heroTitle.style.opacity = "0");
       updateAmbient(tiles[index].color);
+      window.setOrbColors && setOrbColors(tiles[index].app.id);
     }
   }
   function updateAmbient(rgb) {
@@ -740,7 +743,7 @@
       if (color !== ambientColor) {
         ambientColor = color;
         var nextLayer = ambientLayers[1 - ambientIndex];
-        nextLayer.style.background = "radial-gradient(circle 1190px at 32% 42%, rgba(" + color + ",0.36) 0%, rgba(" + color + ",0.15) 50%, rgba(" + color + ",0) 100%)";
+        nextLayer.style.background = "radial-gradient(circle 298px at 32% 42%, rgba(" + color + ",0.6) 0%, rgba(" + color + ",0.26) 50%, rgba(" + color + ",0) 100%)";
         nextLayer.style.opacity = "1";
         ambientLayers[ambientIndex].style.opacity = "0";
         ambientIndex = 1 - ambientIndex;

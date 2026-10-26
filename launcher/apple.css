@@ -1,0 +1,328 @@
+/* Apple TV (tvOS) look, layered over style.css. Remove its <link> in index.html to go back. */
+
+@font-face {
+  font-family: 'Inter';
+  src: url('fonts/inter.woff2') format('woff2');
+  font-weight: 100 900;
+}
+
+/* Loaded after i18n.css, so Inter leads and the Noto fallbacks still cover other scripts. */
+html, body, button, #renewalPanel, #updatePanel {
+  font-family: 'Inter', 'CYTV NotoSans', 'CYTV NotoSansDevanagari', 'CYTV NotoSansKR', 'Noto Sans', sans-serif;
+}
+
+html, body {
+  background: #14161d;
+  background-image: radial-gradient(ellipse at 15% 0%, rgba(104, 128, 186, 0.5), rgba(20, 22, 29, 0) 62%),
+    radial-gradient(ellipse at 100% 100%, rgba(112, 82, 170, 0.38), rgba(20, 22, 29, 0) 58%);
+}
+
+/* ---- top shelf ---- */
+
+#hero {
+  font-size: 84px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+/* ---- header: sentence case and tight tracking instead of wide caps ---- */
+
+#greeting {
+  margin-left: 4px;
+  color: rgba(235, 235, 245, 0.6);
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-transform: none;
+}
+
+#clock {
+  font-size: 92px;
+  font-weight: 600;
+  letter-spacing: -0.035em;
+}
+
+#ampm {
+  color: rgba(235, 235, 245, 0.6);
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.divider { width: 0; margin: 0 14px; }
+
+#date {
+  color: rgba(235, 235, 245, 0.6);
+  font-size: 32px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-transform: none;
+}
+
+/* Frosted capsules; focus turns them solid white, as on tvOS. */
+.pill {
+  height: 80px;
+  border: 0;
+  border-radius: 40px;
+  background: rgba(255, 255, 255, 0.12);
+  font-size: 29px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.pill.focused {
+  background: #fff;
+  color: #000;
+  transform: scale(1.06);
+}
+
+/* ---- dock shelf ---- */
+
+#dockBand {
+  border-radius: 64px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.04));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* ---- tiles: lift and cast a shadow on focus rather than an outline ---- */
+
+.card {
+  border-radius: 28px;
+  background: #1c1c1e;
+  will-change: transform;
+}
+
+.card::after {
+  border-radius: 28px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.item.focused .card {
+  transform: scale(1.08);
+  transition: transform 240ms cubic-bezier(0.25, 1.3, 0.5, 1);
+}
+
+/* Specular sheen across the top of the lifted tile. */
+.item.focused .card::after {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0) 45%);
+}
+
+.name {
+  color: #fff;
+  font-size: 27px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* The highlight sits behind the lifted tile and carries its drop shadow. It only ever
+   moves by transform, so the shadow is drawn once and slid around by the GPU. */
+#glass {
+  border: 0;
+  border-radius: 42px;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 28px 44px rgba(0, 0, 0, 0.55);
+  will-change: transform;
+  transition: opacity 160ms ease, transform 300ms cubic-bezier(0.25, 1.2, 0.5, 1);
+}
+
+/* The colour glow is painted at quarter size and scaled up: it is blurry anyway, and
+   repainting a full 1920x1080 gradient on every move is what made focus changes lag. */
+.ambient {
+  right: auto;
+  bottom: auto;
+  width: 480px;
+  height: 270px;
+  transform: scale(4);
+  transform-origin: 0 0;
+  will-change: opacity;
+}
+
+#glass::before { display: none; }
+
+/* ---- panels ---- */
+
+#inputsPanel {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 36px;
+  background: rgba(44, 44, 46, 0.97);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+}
+
+.inputRow { border-radius: 20px; font-weight: 600; }
+
+.inputRow.focused { background: #fff; color: #000; }
+
+#toast {
+  background: rgba(44, 44, 46, 0.97);
+  font-weight: 600;
+}
+
+/* ---- idle clock (clock.js) ---- */
+
+#idleClock {
+  position: absolute;
+  top: 0; right: 0; bottom: 0; left: 0;
+  z-index: 50;
+  display: none;
+  background: #000;
+}
+
+#idleClock.shown { display: block; }
+
+.idle-clock-face {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 1200px;
+  margin: -170px 0 0 -600px;
+  text-align: center;
+  transition: transform 2s ease;
+}
+
+.idle-clock-time {
+  font-size: 260px;
+  font-weight: 200;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.idle-clock-date {
+  margin-top: 24px;
+  font-size: 44px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: rgba(235, 235, 245, 0.5);
+}
+
+/* ---- moving background ----
+   Three soft orbs coloured from the focused app (orbs.js). Measured on this TV (25 Oct 2026):
+   a CSS mask or a background-color transition repaints the huge scaled layers every frame and
+   drops navigation to ~10 fps. So each orb is a plain gradient drawn once, moved only by
+   transform, and a colour change crossfades two pre-drawn layers by opacity (GPU only). */
+
+#orbs {
+  position: absolute;
+  top: 0; right: 0; bottom: 0; left: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.orb {
+  position: absolute;
+  top: -75px;
+  left: -75px;
+  /* 150px base (scaled ~5-9x by the keyframes): at 200px the colour crossfade dipped to ~46 fps. */
+  width: 150px;
+  height: 150px;
+  will-change: transform;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.orb i {
+  position: absolute;
+  top: 0; right: 0; bottom: 0; left: 0;
+  opacity: 0;
+  will-change: opacity;
+  transition: opacity 900ms ease;
+}
+
+.orb i.on { opacity: 1; }
+
+.orb1 { animation-name: orb1; animation-duration: 26s; }
+.orb2 { animation-name: orb2; animation-duration: 31s; }
+.orb3 { animation-name: orb3; animation-duration: 23s; }
+
+/* The orbs carry each app's colours now; the older full-screen glow would only double the
+   GPU work on every move. */
+.ambient { display: none; }
+
+@keyframes orb1 {
+  0.0% { transform: translate(520px, 260px) scale(7.5); }
+  4.17% { transform: translate(665px, 410px) scale(7.76); }
+  8.33% { transform: translate(800px, 520px) scale(8.0); }
+  12.5% { transform: translate(916px, 560px) scale(8.21); }
+  16.67% { transform: translate(1005px, 520px) scale(8.37); }
+  20.83% { transform: translate(1061px, 410px) scale(8.47); }
+  25.0% { transform: translate(1080px, 260px) scale(8.5); }
+  29.17% { transform: translate(1061px, 110px) scale(8.47); }
+  33.33% { transform: translate(1005px, 0px) scale(8.37); }
+  37.5% { transform: translate(916px, -40px) scale(8.21); }
+  41.67% { transform: translate(800px, 0px) scale(8.0); }
+  45.83% { transform: translate(665px, 110px) scale(7.76); }
+  50.0% { transform: translate(520px, 260px) scale(7.5); }
+  54.17% { transform: translate(375px, 410px) scale(7.24); }
+  58.33% { transform: translate(240px, 520px) scale(7.0); }
+  62.5% { transform: translate(124px, 560px) scale(6.79); }
+  66.67% { transform: translate(35px, 520px) scale(6.63); }
+  70.83% { transform: translate(-21px, 410px) scale(6.53); }
+  75.0% { transform: translate(-40px, 260px) scale(6.5); }
+  79.17% { transform: translate(-21px, 110px) scale(6.53); }
+  83.33% { transform: translate(35px, 0px) scale(6.63); }
+  87.5% { transform: translate(124px, -40px) scale(6.79); }
+  91.67% { transform: translate(240px, 0px) scale(7.0); }
+  95.83% { transform: translate(375px, 110px) scale(7.24); }
+  100.0% { transform: translate(520px, 260px) scale(7.5); }
+}
+
+@keyframes orb2 {
+  0.0% { transform: translate(1749px, 560px) scale(9.04); }
+  4.17% { transform: translate(1666px, 720px) scale(8.84); }
+  8.33% { transform: translate(1557px, 837px) scale(8.59); }
+  12.5% { transform: translate(1432px, 880px) scale(8.3); }
+  16.67% { transform: translate(1297px, 837px) scale(7.99); }
+  20.83% { transform: translate(1163px, 720px) scale(7.68); }
+  25.0% { transform: translate(1037px, 560px) scale(7.39); }
+  29.17% { transform: translate(930px, 400px) scale(7.15); }
+  33.33% { transform: translate(848px, 283px) scale(6.96); }
+  37.5% { transform: translate(797px, 240px) scale(6.84); }
+  41.67% { transform: translate(780px, 283px) scale(6.8); }
+  45.83% { transform: translate(798px, 400px) scale(6.84); }
+  50.0% { transform: translate(851px, 560px) scale(6.96); }
+  54.17% { transform: translate(934px, 720px) scale(7.16); }
+  58.33% { transform: translate(1043px, 837px) scale(7.41); }
+  62.5% { transform: translate(1168px, 880px) scale(7.7); }
+  66.67% { transform: translate(1303px, 837px) scale(8.01); }
+  70.83% { transform: translate(1437px, 720px) scale(8.32); }
+  75.0% { transform: translate(1563px, 560px) scale(8.61); }
+  79.17% { transform: translate(1670px, 400px) scale(8.85); }
+  83.33% { transform: translate(1752px, 283px) scale(9.04); }
+  87.5% { transform: translate(1803px, 240px) scale(9.16); }
+  91.67% { transform: translate(1820px, 283px) scale(9.2); }
+  95.83% { transform: translate(1802px, 400px) scale(9.16); }
+  100.0% { transform: translate(1749px, 560px) scale(9.04); }
+}
+
+@keyframes orb3 {
+  0.0% { transform: translate(342px, 820px) scale(5.8); }
+  4.17% { transform: translate(260px, 877px) scale(5.72); }
+  8.33% { transform: translate(349px, 930px) scale(5.7); }
+  12.5% { transform: translate(586px, 976px) scale(5.73); }
+  16.67% { transform: translate(907px, 1011px) scale(5.81); }
+  20.83% { transform: translate(1226px, 1033px) scale(5.94); }
+  25.0% { transform: translate(1458px, 1040px) scale(6.11); }
+  29.17% { transform: translate(1540px, 1033px) scale(6.3); }
+  33.33% { transform: translate(1451px, 1011px) scale(6.51); }
+  37.5% { transform: translate(1214px, 976px) scale(6.72); }
+  41.67% { transform: translate(893px, 930px) scale(6.91); }
+  45.83% { transform: translate(574px, 877px) scale(7.07); }
+  50.0% { transform: translate(342px, 820px) scale(7.2); }
+  54.17% { transform: translate(260px, 763px) scale(7.28); }
+  58.33% { transform: translate(349px, 710px) scale(7.3); }
+  62.5% { transform: translate(586px, 664px) scale(7.27); }
+  66.67% { transform: translate(907px, 629px) scale(7.19); }
+  70.83% { transform: translate(1226px, 607px) scale(7.06); }
+  75.0% { transform: translate(1458px, 600px) scale(6.89); }
+  79.17% { transform: translate(1540px, 607px) scale(6.7); }
+  83.33% { transform: translate(1451px, 629px) scale(6.49); }
+  87.5% { transform: translate(1214px, 664px) scale(6.28); }
+  91.67% { transform: translate(893px, 710px) scale(6.09); }
+  95.83% { transform: translate(574px, 763px) scale(5.93); }
+  100.0% { transform: translate(342px, 820px) scale(5.8); }
+}
+
+/* Nothing needs to move behind the clock screen. */
+body.idle .orb { animation-play-state: paused; }
+

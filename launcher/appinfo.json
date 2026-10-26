@@ -18,6 +18,6 @@
   "supportGIP": true,
   "needNetworkToLaunchOnBoot": false,
   "splashBackground": "splash.png",
-  "titleVisible": true,
+  "titleVisible": false,
   "systemUpdateProtocol": 1
 }

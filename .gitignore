@@ -28,3 +28,6 @@ saved-probe.txt
 /tv-cleanup-2026-10-23/
 /releases
 /.vscode/
+
+# Personal TV settings (address, display name)
+tv.local.env

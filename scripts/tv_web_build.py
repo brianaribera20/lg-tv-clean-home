@@ -1,6 +1,7 @@
 """Compile only TV web application assets; never process native/Node services."""
 import argparse
 import json
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -35,6 +36,12 @@ def stage(source, output, compiler=compile_web):
         if path.is_file():
             files[path.relative_to(source).as_posix()] = path.read_bytes()
     compiled = compiler(files)
+    # Personal app title from tv.local.env (kept out of git); the committed default is "Home".
+    title = os.environ.get('TV_APP_TITLE', '').strip()
+    if title and 'appinfo.json' in compiled:
+        info = json.loads(compiled['appinfo.json'])
+        info['title'] = title
+        compiled['appinfo.json'] = (json.dumps(info, indent=2, ensure_ascii=False) + '\n').encode('utf-8')
     if output.exists():
         shutil.rmtree(output)
     for name, raw in compiled.items():

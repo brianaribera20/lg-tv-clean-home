@@ -25,7 +25,7 @@ module.exports=function(data,log,onForeground,onReset,onPower){
   var deadline=setTimeout(function(){s.terminate();},10000),pulse=null,alive=true;
   cleanup=function(){clearTimeout(deadline);clearInterval(pulse);};
   s.on('open',function(){
-   s.send(JSON.stringify({type:'register',id:'register',payload:{forcePairing:false,pairingType:'PROMPT','client-key':key,manifest:{manifestVersion:1,appVersion:'1.1',permissions:['READ_APP_STATUS','READ_RUNNING_APPS','READ_POWER_STATE','CONTROL_POWER']}}}));
+   s.send(JSON.stringify({type:'register',id:'register',payload:{forcePairing:false,pairingType:'PROMPT','client-key':key,manifest:{manifestVersion:1,appVersion:'1.1',permissions:['READ_APP_STATUS','READ_RUNNING_APPS','READ_POWER_STATE','CONTROL_POWER','WRITE_NOTIFICATION_TOAST']}}}));
   });
   s.on('pong',function(){alive=true;});
   s.on('message',function(raw){
@@ -55,5 +55,8 @@ module.exports=function(data,log,onForeground,onReset,onPower){
   s.on('close',function(code){clearTimeout(deadline);clearInterval(pulse);onReset();log({event:'screen-watch-disconnected',code:code});later();});
  }
  connect();
- return {close:function(){closed=true;clearTimeout(retry);if(cleanup)cleanup();onReset();if(socket)socket.terminate();}};
+ // One-off request on the paired connection (idle warning toast, power off).
+ var seq=0;
+ function request(uri,payload){if(socket&&socket.readyState===1)socket.send(JSON.stringify({type:'request',id:'req'+(++seq),uri:uri,payload:payload||{}}));else log({event:'request-dropped',uri:uri});}
+ return {request:request,close:function(){closed=true;clearTimeout(retry);if(cleanup)cleanup();onReset();if(socket)socket.terminate();}};
 };

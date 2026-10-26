@@ -17,13 +17,14 @@
     });
   }
   function create(storage, inventory, config) {
-    var catalog = clean(inventory), hidden = unique(config.hiddenApps || []), ids, saved;
+    var catalog = clean(inventory), hidden = unique((config.hiddenApps || []).concat((typeof window !== 'undefined' && window.CONFIG_HIDDEN) || [])), ids, saved;
     try {
       saved = JSON.parse(storage.getItem(KEY));
       if (!saved || saved.version !== 1 || !Array.isArray(saved.ids) || !Array.isArray(saved.hidden) || !Array.isArray(saved.catalog)) saved = null;
     } catch (_) { saved = null; }
     if (saved) {
-      catalog = clean(catalog.concat(saved.catalog)); hidden = unique(saved.hidden); ids = unique(saved.ids);
+      // Apps hidden in config.js stay hidden even after the TV has saved its own layout.
+      catalog = clean(catalog.concat(saved.catalog)); hidden = unique(saved.hidden.concat(config.hiddenApps || [], (typeof window !== 'undefined' && window.CONFIG_HIDDEN) || [])); ids = unique(saved.ids);
     } else {
       var legacy;
       try { legacy = JSON.parse(storage.getItem('tvhome.order')); } catch (_) {}

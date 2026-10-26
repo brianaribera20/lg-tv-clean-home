@@ -57,7 +57,25 @@ function fromUpdater(m){
  });
 });
 
-var homeControl=require('./home-control')(fs,'/media/developer/apps/usr/palm/applications/com.local.nativehome/state');
+// Shared with Home Helper: this service's own folder is the one both sandboxes can see (native.js).
+var ipcDir=__dirname+'/ipc';
+try{fs.mkdirSync(ipcDir);}catch(e){}
+try{fs.chmodSync(ipcDir,511);}catch(e){}
+var homeControl=require('./home-control')(fs,ipcDir);
+// Power-on app switch (Home settings): Home Helper reads wake.json each time the TV wakes.
+var wakePath=ipcDir+'/wake.json';
+function wakeEnabled(){try{return JSON.parse(fs.readFileSync(wakePath,'utf8')).enabled!==false;}catch(e){return true;}}
+function fromHome(m){var raw=m.ls2Message,id=raw&&raw.applicationID&&raw.applicationID();return typeof id==='string'&&id.split(' ')[0]==='com.gathin.tvhome';}
+service.register('wakeStatus',function(m){
+ if(!fromHome(m)){m.respond({returnValue:false,errorText:'caller-not-authorized'});return;}
+ m.respond({returnValue:true,enabled:wakeEnabled()});
+});
+service.register('setWake',function(m){
+ if(!fromHome(m)){m.respond({returnValue:false,errorText:'caller-not-authorized'});return;}
+ if(!m.payload||typeof m.payload.enabled!=='boolean'){m.respond({returnValue:false,errorText:'Invalid request'});return;}
+ try{fs.writeFileSync(wakePath+'.tmp',JSON.stringify({enabled:m.payload.enabled}),{mode:436});fs.chmodSync(wakePath+'.tmp',436);fs.renameSync(wakePath+'.tmp',wakePath);m.respond({returnValue:true,enabled:wakeEnabled()});}
+ catch(e){m.respond({returnValue:false,errorText:'Home Helper data unavailable',detail:String(e.code||e.message||e),uid:process.getuid&&process.getuid()});}
+});
 ['homeStatus','setHomeControl','openLGHome'].forEach(function(method){
  service.register(method,function(m){
   var raw=m.ls2Message,id=raw&&raw.applicationID&&raw.applicationID();

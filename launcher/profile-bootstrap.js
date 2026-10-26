@@ -1,7 +1,7 @@
 (window.HomeI18n?HomeI18n.ready:function(callback){callback();})(function(){
 (function(){
  'use strict';
- var booted=false,profileError=false,systemRestore=null,restoreMarker='tvhome.rollback.restored.v1';
+ var booted=false,profileError=false,systemRestore=null,restoreMarker='tvhome.rollback.restored.v1',absentKey='tvhome.updaterAbsent';
  function rpc(method,payload,cb,service){var b,done=false;var timer=setTimeout(function(){finish(null);},2000);
   function finish(r,ok){if(done)return;done=true;clearTimeout(timer);if(b)try{b.cancel();}catch(_){}cb(r,ok===true);}
   try{b=new PalmServiceBridge();b.onservicecallback=function(raw){try{var r=JSON.parse(raw);finish(r.returnValue===true?(r.result===undefined?r.state:r.result):null,r.returnValue===true);}catch(_){finish(null);}};b.call((service||'luna://com.cleanyourtv.updater.service/')+method,JSON.stringify(payload||{}));}catch(_){finish(null);}
@@ -52,6 +52,7 @@
  // the independent updater's backup before constructing the tile grid.
  if(!saved&&window.TV_APPS&&TV_APPS.apps&&TV_APPS.apps.length){boot();return;}
  rpc('restore',{withTransaction:true},function(value,ok){
+  try{if(!ok&&value===null)localStorage.setItem(absentKey,'1');else if(ok)localStorage.removeItem(absentKey);}catch(_){}
   var tx=value&&value.transaction,snapshot=value&&Object.prototype.hasOwnProperty.call(value,'transaction')?value.profile:value;
   function finish(restore,identity){try{if(restore&&snapshot)use(snapshot,true,identity);else if(saved)use(saved);}catch(_){profileError=true;}boot();}
   if(!ok&&!saved)profileError=true;
@@ -67,6 +68,12 @@
  });
  }
  function systemError(error){profileError=true;window.SystemUpdates.open({edition:'no-root',recovery:true,error:error.message});}
+ // No updater services on this TV (remembered from an earlier start): render from the saved
+ // profile straight away instead of waiting on two service calls that cannot answer.
+ // Only in builds made for a known TV (TV_FAST_BOOT in compile-tv-web.cjs), so a TV that later
+ // gains the updater still reports health through it.
+ var absent=false;try{absent=window.TV_FAST_BOOT===true&&localStorage.getItem(absentKey)==='1';}catch(_){}
+ if(absent){var fast=null;try{fast=HomeData.load(localStorage);}catch(_){}try{if(fast)use(fast);}catch(_){profileError=true;}boot();return;}
  if(window.SystemUpdates){
   window.SystemUpdates.rpc('restoreProfile',{edition:'no-root'}).then(function(restored){
    if(!restored){legacy();return;}
@@ -81,7 +88,7 @@
     use(already?saved:restored.profile,!already,identity);systemRestore=restored;window.RootLauncherRendered=false;boot();
    }catch(error){systemError(error);}};
    manifest.onerror=manifest.ontimeout=function(){systemError(Error('Installed Home version unavailable'));};manifest.send();
-  }).catch(function(error){if(error.unavailable===true)legacy();else systemError(error);});
+  }).catch(function(error){if(error.unavailable===true){try{localStorage.setItem(absentKey,'1');}catch(_){}legacy();}else systemError(error);});
  }else legacy();
 }());
 

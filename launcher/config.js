@@ -1,1 +1,3 @@
-window.CONFIG = {columns: 5, dockApps: [], hiddenApps: ["com.gathin.tvhome", "com.local.nativehome"]};
+window.CONFIG = {columns: 4, dockApps: ["youtube.leanback.ytv.v1", "amazon", "com.apple.appletv", "youtube.leanback.v4"], hiddenApps: ["com.gathin.tvhome", "com.local.nativehome", "com.miniclip.eightballpool", "com.webos.app.lgchannels", "com.lgtvod.us.app", "epoxyaisports", "webos.day", "com.lgtravel.app", "com.volley.lgshell", "com.palmdts.devmode", "com.webos.app.roomconnect", "com.webos.app.sportsteamsettings", "com.disney.disneyplus-prod", "com.webos.app.homeconnect"]};
+// Kept apart: a saved profile on the TV replaces CONFIG, but these always stay hidden.
+window.CONFIG_HIDDEN = window.CONFIG.hiddenApps.slice();

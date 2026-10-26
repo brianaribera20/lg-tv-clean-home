@@ -24,7 +24,7 @@ function controller({automatic=true,blocked=false}={}){
  try{vm.runInNewContext(fs.readFileSync('native/app/native.js','utf8'),context);}catch(e){if(e.exit===0)return{calls,files,dir,blockedExit:true};throw e;}
  advance(automatic?0:1000);calls[0].reply();worker.stdout.emit('data',Buffer.from('READY\n'));
  function resume(){watch.power({state:'Suspend'});watch.fg(COVER);watch.power({state:'Active'});advance(400);}
- function rpc(method,enabled){files.set(dir+'home-request.json',JSON.stringify({id:(++requestId).toString(16).padStart(32,'0'),method,enabled,expires:now+5000}));advance(400);}
+ function rpc(method,enabled){files.set('/media/developer/apps/usr/palm/services/com.gathin.tvhome.renewal/ipc/home-request.json',JSON.stringify({id:(++requestId).toString(16).padStart(32,'0'),method,enabled,expires:now+5000}));advance(400);}
  return{calls,logs,files,dir,advance,resume,rpc,fg:id=>watch.fg(id),watchLog:x=>watch.log(x),command(cmd){files.set(dir+'control.json',JSON.stringify({cmd,nonce:(++requestId).toString(16).padStart(32,'0')}));advance(400);},power:p=>watch.power(p),reset:()=>watch.reset(),worker:()=>worker,homeCalls:()=>calls.filter(c=>c.id===HOME)};
 }
 test('LG Home arriving while resume launch is in flight is retried without another foreground event',()=>{

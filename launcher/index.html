@@ -6,9 +6,12 @@
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="renewal-panel.css">
   <link rel="stylesheet" href="i18n.css">
+  <link rel="stylesheet" href="apple.css">
 </head>
 <body>
   <!-- Ambient glow in the colour of the focused dock app; two layers so colours crossfade. -->
+  <!-- Slow drifting colour orbs (apple.css) so the screen always feels alive. -->
+  <div id="orbs"><div class="orb orb1"><i></i><i></i></div><div class="orb orb2"><i></i><i></i></div><div class="orb orb3"><i></i><i></i></div></div>
   <div id="ambientA" class="ambient"></div>
   <div id="ambientB" class="ambient"></div>
 
@@ -56,6 +59,7 @@
   <script src="i18n.js"></script>
   <script src="catalogs.js"></script>
   <script src="apps.js"></script>
+  <script src="app-colors.js"></script>
   <script src="app-library.js"></script>
   <script src="user-data.js"></script>
   <script src="release-notes.js"></script>
@@ -63,6 +67,8 @@
   <script src="update-panel.js"></script>
   <script src="renewal-panel.js"></script>
   <script src="helper-control.js"></script>
+  <script src="clock.js"></script>
+  <script src="orbs.js"></script>
   <script src="profile-bootstrap.js"></script>
 </body>
 </html>
