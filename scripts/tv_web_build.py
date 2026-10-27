@@ -35,6 +35,12 @@ def stage(source, output, compiler=compile_web):
             raise ValueError('Indirect web source: ' + str(path))
         if path.is_file():
             files[path.relative_to(source).as_posix()] = path.read_bytes()
+    # Personal values for this TV (tv.local.env, never committed) become local.js.
+    local = {}
+    lat, lon = os.environ.get('TV_WEATHER_LAT', '').strip(), os.environ.get('TV_WEATHER_LON', '').strip()
+    if lat and lon:
+        local['weather'] = {'lat': float(lat), 'lon': float(lon)}
+    files['local.js'] = ('window.TV_LOCAL = ' + json.dumps(local) + ';\n').encode('utf-8')
     compiled = compiler(files)
     # Personal app title from tv.local.env (kept out of git); the committed default is "Home".
     title = os.environ.get('TV_APP_TITLE', '').strip()

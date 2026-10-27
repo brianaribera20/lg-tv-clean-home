@@ -1,0 +1,98 @@
+// Scores card above the dock: Ravens, Commanders and Capitals. The service (scores.js in
+// renewal-service) fetches and trims ESPN's data; this file only draws a few lines per team.
+// A live game shows its score and clock; otherwise the next game, its time and channel, and
+// the last result. Refreshes every 10 minutes, every minute while a game is live.
+(function () {
+  var box = document.createElement('div');
+  box.id = 'scores';
+  // Inside the header, so it slides away with it as one layer when scrolling to the grid
+  // (fading the cards on their own cost ~6 fps on this TV).
+  (document.querySelector('header') || document.body).appendChild(box);
+  var DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]; }); }
+  function clock(d) {
+    var h = d.getHours();
+    return (h % 12 || 12) + ':' + ('0' + d.getMinutes()).slice(-2) + (h < 12 ? ' AM' : ' PM');
+  }
+  function when(iso) {
+    var d = new Date(iso), now = new Date();
+    var day = new Date(d.getFullYear(), d.getMonth(), d.getDate()), today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    var diff = Math.round((day - today) / 86400000);
+    var label = diff === 0 ? 'Today' : diff === 1 ? 'Tomorrow' : diff > 1 && diff < 7 ? DAYS[d.getDay()] : MONTHS[d.getMonth()] + ' ' + d.getDate();
+    return label + ' ' + clock(d);
+  }
+  function logo(league, abbr, size) {
+    // ESPN's dark-background logo set: transparent PNGs drawn to stand out on dark cards.
+    return 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/' + String(league).toLowerCase() + '/500-dark/' +
+      String(abbr).toLowerCase() + '.png&h=' + size + '&w=' + size;
+  }
+  // Card tint from the team's own colour (ESPN hex); fall back to the alternate if it's near black.
+  function tint(t) {
+    function rgb(hex) { var n = parseInt(hex, 16); return isNaN(n) ? null : [n >> 16 & 255, n >> 8 & 255, n & 255]; }
+    var c = rgb(t.color), alt = rgb(t.altColor);
+    if (!c || Math.max(c[0], c[1], c[2]) < 40) c = alt && Math.max(alt[0], alt[1], alt[2]) >= 40 ? alt : [88, 132, 255];
+    var v = c.join(',');
+    return 'background:linear-gradient(150deg,rgba(' + v + ',0.62) 0%,rgba(' + v + ',0.22) 55%,rgba(20,22,29,0.35) 100%)';
+  }
+  // Section label with the TV channel badge on the right (live and next games alike).
+  function label(text, tv, cls) {
+    return '<div class="sc-label' + cls + '"><span>' + text + '</span>' + (tv ? '<span class="sc-tv">' + esc(tv) + '</span>' : '') + '</div>';
+  }
+  function plate(src, cls) { return '<span class="' + cls + '"><img src="' + esc(src) + '" alt=""></span>'; }
+
+  function card(t) {
+    var league = t.league, html = '<div class="sc-top">' + plate(t.logo, 'sc-logo') + '<div><div class="sc-name">' + esc(t.name) +
+      '</div><div class="sc-rec">' + esc(t.record) + (t.record ? '  ·  ' : '') + esc(league) + '</div></div></div>';
+    if (t.live) {
+      var g = t.live;
+      html += label('<span class="sc-dot"></span>LIVE  ·  ' + esc(g.detail), g.tv, ' sc-live-label') +
+        '<div class="sc-score">' + plate(t.logo, 'sc-opp') + '<span>' + esc(g.us) + '</span><span class="sc-dash">–</span><span>' + esc(g.them) +
+        '</span>' + plate(logo(league, g.opp, 96), 'sc-opp') + '<span class="sc-score-opp">' + esc(g.opp) + '</span></div>';
+    } else if (t.next) {
+      var n = t.next;
+      html += label('Next game', n.tv, '') + '<div class="sc-match"><span class="sc-vs">' + (n.home ? 'vs' : 'at') + '</span>' +
+        plate(logo(league, n.opp, 96), 'sc-opp') + '<span class="sc-opp-name">' + esc(n.oppName) + '</span></div>' +
+        '<div class="sc-when">' + esc(when(n.date)) + '</div>';
+    }
+    if (t.last && !t.live) {
+      var l = t.last;
+      html += '<div class="sc-last"><span class="sc-res ' + (l.won ? 'sc-w' : 'sc-l') + '">' + (l.won ? 'W' : 'L') + '</span>' +
+        esc(l.us) + '–' + esc(l.them) + '  ' + (l.home ? 'vs ' : 'at ') + esc(l.opp) + '</div>';
+    }
+    return '<div class="score-card' + (t.live ? ' live' : '') + '" style="' + tint(t) + '">' + html + '</div>';
+  }
+
+  function render(teams) {
+    teams = (teams || []).slice().sort(function (a, b) {
+      if (!!a.live !== !!b.live) return a.live ? -1 : 1;
+      return (a.next ? Date.parse(a.next.date) : Infinity) - (b.next ? Date.parse(b.next.date) : Infinity);
+    });
+    box.innerHTML = teams.map(card).join('');
+    box.className = teams.length ? 'shown' : '';
+    return teams.some(function (t) { return t.live; });
+  }
+  window.ScoresCard = {render: render};
+
+  var timer = null;
+  function refresh() {
+    clearTimeout(timer);
+    if (typeof PalmServiceBridge === 'undefined') return;
+    var b = new PalmServiceBridge(), done = false;
+    var guard = setTimeout(function () { finish(null); }, 30000);
+    function finish(r) {
+      if (done) return; done = true; clearTimeout(guard); try { b.cancel(); } catch (_) {}
+      var live = r && r.returnValue === true ? render(r.teams) : false;
+      timer = setTimeout(refresh, live ? 60000 : 10 * 60000);
+    }
+    b.onservicecallback = function (raw) { try { finish(JSON.parse(raw)); } catch (_) { finish(null); } };
+    try { b.call('luna://com.gathin.tvhome.renewal/scores', '{}'); } catch (_) { finish(null); }
+  }
+  refresh();
+  // Coming back to Home after a while: refresh rather than wait out the timer.
+  var hiddenAt = 0;
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) hiddenAt = Date.now(); else if (Date.now() - hiddenAt > 120000) refresh();
+  });
+}());

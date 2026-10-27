@@ -10,13 +10,27 @@
     return window.HomeI18n ? HomeI18n.html(markup) : markup;
   }
   // Shared layout, focus and remote-control state.
-  var DOCK_TOP = 680,
-    DOCK_HEIGHT = 290,
-    CARD_HEIGHT = 202,
+  // Tile size follows the column count: 360x202 fits four per row; five need ~299x168.
+  // The focus ring stays an even 12px around the lifted tile (scale 1.08 in apple.css) and the
+  // dock shelf a further 24px around the ring, whatever the size.
+  var LAYOUT_COLUMNS = Math.max(1, CONFIG.columns || 4),
+    CARD_WIDTH = Math.min(360, Math.floor(1696 / LAYOUT_COLUMNS - 40)),
+    CARD_HEIGHT = Math.round(CARD_WIDTH * 202 / 360),
+    GLASS_WIDTH = 1.08 * CARD_WIDTH + 24,
+    GLASS_HEIGHT = 1.08 * CARD_HEIGHT + 24,
+    SHELF_SIDE = (GLASS_WIDTH - CARD_WIDTH) / 2 + 24,
+    DOCK_TOP = 680,
+    DOCK_HEIGHT = Math.round(GLASS_HEIGHT + 48),
     TILE_BASE = DOCK_TOP + Math.round((DOCK_HEIGHT - CARD_HEIGHT) / 2),
+    ROW_STEP = CARD_HEIGHT + 90,
     HERO_OFFSET = 176;
+  (function () {
+    var css = document.createElement("style");
+    css.textContent = ".item{width:" + CARD_WIDTH + "px}.card{width:" + CARD_WIDTH + "px;height:" + CARD_HEIGHT + "px}";
+    document.head.appendChild(css);
+  })();
   var toastTimer,
-    columnCount = Math.max(1, CONFIG.columns || 4),
+    columnCount = LAYOUT_COLUMNS,
     columnWidth = 1696 / columnCount,
     KEY_OK = 13,
     KEY_BACK = 461,
@@ -630,11 +644,11 @@
     return Math.floor(index / columnCount);
   }
   function tileLeft(index) {
-    return 112 + index % columnCount * columnWidth + (columnWidth - 360) / 2;
+    return 112 + index % columnCount * columnWidth + (columnWidth - CARD_WIDTH) / 2;
   }
   function tileTop(index) {
     var row = rowFor(index);
-    return TILE_BASE + 292 * row + (row > 0 ? 36 : 0);
+    return TILE_BASE + ROW_STEP * row + (row > 0 ? 36 : 0);
   }
   function layoutTiles() {
     tiles.forEach(function (e, t) {
@@ -646,9 +660,9 @@
     var dockBand = getElement("dockBand"),
       dockCount = Math.min(columnCount, tiles.length);
     dockBand.style.display = dockCount ? "block" : "none";
-    dockBand.style.left = tileLeft(0) - 50 + "px";
+    dockBand.style.left = tileLeft(0) - SHELF_SIDE + "px";
     dockBand.style.top = DOCK_TOP + "px";
-    dockBand.style.width = (dockCount - 1) * columnWidth + 360 + 100 + "px";
+    dockBand.style.width = (dockCount - 1) * columnWidth + CARD_WIDTH + 2 * SHELF_SIDE + "px";
     dockBand.style.height = DOCK_HEIGHT + "px";
   }
   function animateTiles() {
@@ -705,16 +719,19 @@
       tiles[index].el.classList.add("focused");
       var top = tileTop(index),
         row = rowFor(index);
-      0 === row && !moveState ? scrollOffset = 0 : (top - scrollOffset + 202 + 70 > (moveState ? 850 : 1060) && (scrollOffset = top + 202 + 70 - (moveState ? 850 : 1060)), top - scrollOffset - 24 < 80 && (scrollOffset = top - 24 - 80));
+      0 === row && !moveState ? scrollOffset = 0 : (top - scrollOffset + CARD_HEIGHT + 70 > (moveState ? 850 : 1060) && (scrollOffset = top + CARD_HEIGHT + 70 - (moveState ? 850 : 1060)), top - scrollOffset - 24 < 80 && (scrollOffset = top - 24 - 80));
       stage.style.transform = "translateY(" + -scrollOffset + "px)";
       var header = document.querySelector("header"),
-        headerBottom = header.offsetTop + header.offsetHeight;
+        headerBottom = header.offsetTop + header.offsetHeight,
+        scoresBox = document.getElementById("scores");
+      // The scores cards hang below the header; hide it before the tiles reach them.
+      scoresBox && scoresBox.offsetHeight && (headerBottom = Math.max(headerBottom, header.offsetTop + scoresBox.offsetTop + scoresBox.offsetHeight));
       document.body.classList.toggle("scrolled", DOCK_TOP - scrollOffset < headerBottom + 24);
       // Even 12px ring around the lifted tile (scale 1.08 in apple.css), ~24px inside the dock shelf.
-      var glassWidth = 1.08 * 360 + 24,
-        glassHeight = 1.08 * 202 + 24,
-        glassLeft = tileLeft(index) + 180 - glassWidth / 2,
-        glassTop = top + 101 - glassHeight / 2;
+      var glassWidth = GLASS_WIDTH,
+        glassHeight = GLASS_HEIGHT,
+        glassLeft = tileLeft(index) + CARD_WIDTH / 2 - glassWidth / 2,
+        glassTop = top + CARD_HEIGHT / 2 - glassHeight / 2;
       focusGlass.style.width = glassWidth + "px";
       focusGlass.style.height = glassHeight + "px";
       focusGlass.style.transform = "translate(" + glassLeft + "px," + glassTop + "px)";
@@ -944,7 +961,7 @@
         } else if (39 === key) {
           column < columnCount - 1 && focusedTile < lastIndex && focusTile(focusedTile + 1);
         } else if (38 === key) {
-          0 === rowFor(focusedTile) ? focusTopButton((tileCenter = tileLeft(focusedTile) + 180, nearestButton = 0, nearestDistance = 1 / 0, topButtons.forEach(function (e, t) {
+          0 === rowFor(focusedTile) ? focusTopButton((tileCenter = tileLeft(focusedTile) + CARD_WIDTH / 2, nearestButton = 0, nearestDistance = 1 / 0, topButtons.forEach(function (e, t) {
             var n = e.getBoundingClientRect(),
               a = Math.abs(n.left + n.width / 2 - tileCenter);
             a < nearestDistance && (nearestDistance = a, nearestButton = t);

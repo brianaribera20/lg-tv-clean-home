@@ -77,6 +77,14 @@ service.register('bootNote',function(m){
  try{var up=parseFloat(fs.readFileSync('/proc/uptime','utf8'));fs.writeFileSync(ipcDir+'/boot-helper.json',JSON.stringify(Object.assign({uptimeAtNote:up,at:Date.now()},m.payload||{})),{mode:438});}catch(e){}
  m.respond({returnValue:true});
 });
+// Ravens / Commanders / Capitals for Home's scores card (scores.js trims ESPN's data here).
+var scores=null,scoresBusy=[];try{var makeScores=require('./scores');if(typeof makeScores==='function')scores=makeScores(__dirname);}catch(e){}
+service.register('scores',function(m){
+ if(!fromHome(m)){m.respond({returnValue:false,errorText:'caller-not-authorized'});return;}
+ if(!scores){m.respond({returnValue:false,errorText:'scores-unavailable'});return;}
+ scoresBusy.push(m);if(scoresBusy.length>1)return;
+ scores(function(teams){var waiting=scoresBusy;scoresBusy=[];waiting.forEach(function(w){w.respond({returnValue:true,teams:teams});});});
+});
 service.register('wakeStatus',function(m){
  if(!fromHome(m)){m.respond({returnValue:false,errorText:'caller-not-authorized'});return;}
  m.respond({returnValue:true,enabled:wakeEnabled()});

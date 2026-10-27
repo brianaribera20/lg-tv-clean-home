@@ -1,4 +1,6 @@
-// Idle clock screen, in place of LG's screensaver. Home Helper opens Home with
+// Idle clock screen, in place of LG's screensaver. It keeps Home's own background and orbs,
+// fades the header and tiles away, and shows the time centred in Home's font with the date
+// and weather beneath (the TV is an LED panel, so nothing needs to drift). Home Helper opens Home with
 // {screensaver:true} after an hour without remote activity; Home also starts it itself
 // after an hour idle on this screen. Any button or pointer movement dismisses it and
 // is swallowed, so the press that wakes the screen never opens an app.
@@ -6,24 +8,25 @@
   var IDLE = 60 * 60000, last = Date.now(), visible = false, timer = null;
   var el = document.createElement('div');
   el.id = 'idleClock';
-  el.innerHTML = '<div class="idle-clock-face"><div class="idle-clock-time"></div><div class="idle-clock-date"></div></div>';
+  el.innerHTML = '<div class="idle-clock-face"><div class="idle-clock-time"><span></span><span class="idle-clock-ampm"></span></div>' +
+    '<div class="idle-clock-info"></div></div>';
   document.body.appendChild(el);
-  var face = el.firstChild, time = face.firstChild, date = face.lastChild;
+  var face = el.firstChild, time = face.firstChild.firstChild, ampm = face.firstChild.lastChild, date = face.lastChild;
   var DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
   function tick() {
     var now = new Date(), h = now.getHours();
     time.textContent = (h % 12 || 12) + ':' + ('0' + now.getMinutes()).slice(-2);
-    date.textContent = DAYS[now.getDay()] + ', ' + MONTHS[now.getMonth()] + ' ' + now.getDate();
-    // Drift a little each minute so nothing sits in one place for hours.
-    var x = Math.round((Math.random() - 0.5) * 900), y = Math.round((Math.random() - 0.5) * 520);
-    face.style.transform = 'translate(' + x + 'px,' + y + 'px)';
+    ampm.textContent = h < 12 ? 'AM' : 'PM';
+    var weather = document.getElementById('weather');
+    date.textContent = DAYS[now.getDay()] + ', ' + MONTHS[now.getMonth()] + ' ' + now.getDate() +
+      (weather && weather.className === 'shown' && weather.textContent ? '   ·   ' + weather.textContent : '');
   }
   function show() {
     if (visible) return;
     visible = true; tick(); el.className = 'shown'; document.body.classList.add('idle');
-    timer = setInterval(tick, 60000);
+    timer = setInterval(tick, 15000);
   }
   function hide() {
     visible = false; el.className = ''; document.body.classList.remove('idle'); clearInterval(timer);

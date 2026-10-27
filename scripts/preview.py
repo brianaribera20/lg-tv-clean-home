@@ -13,7 +13,7 @@ import webbrowser
 
 ROOT = Path(__file__).resolve().parents[1]
 LAUNCHER_FILES = {
-    'index.html', 'style.css', 'apple.css', 'clock.js', 'boot-helper.js', 'orbs.js', 'app-colors.js', 'fonts/inter.woff2', 'fonts/Inter-OFL.txt', 'renewal-panel.css', 'app.js', 'app-library.js', 'config.js',
+    'index.html', 'style.css', 'apple.css', 'clock.js', 'boot-helper.js', 'weather.js', 'scores.js', 'orbs.js', 'app-colors.js', 'fonts/inter.woff2', 'fonts/Inter-OFL.txt', 'renewal-panel.css', 'app.js', 'app-library.js', 'config.js',
     'user-data.js', 'release-notes.js', 'system-updates.js', 'update-panel.js', 'renewal-panel.js', 'helper-control.js', 'profile-bootstrap.js',
     'native-bootstrap.js', 'i18n.js', 'catalogs.js', 'i18n.css', 'fonts/outfit.ttf', 'fonts/NotoSans.ttf', 'fonts/NotoSans-OFL.txt', 'fonts/NotoSansDevanagari.ttf', 'fonts/NotoSansDevanagari-OFL.txt', 'fonts/NotoSansKR.ttf', 'fonts/NotoSansKR-OFL.txt', 'fonts/OFL.txt',
 }

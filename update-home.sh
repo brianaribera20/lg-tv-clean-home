@@ -8,7 +8,7 @@ cd "$(dirname "$0")"
 # Personal settings (TV address, display name) live in tv.local.env, which is not committed.
 [ -f tv.local.env ] && . ./tv.local.env
 : "${TV_HOST:?Set TV_HOST in tv.local.env (copy tv.local.env.example)}"
-export TV_HOST TV_APP_TITLE
+export TV_HOST TV_APP_TITLE TV_WEATHER_LAT TV_WEATHER_LON
 export DEVICE="${DEVICE:-clean-your-tv-${TV_HOST//./-}}"
 export PATH="$PWD/.venv/bin:$PWD/build/tools/node_modules/.bin:$PATH"
 umask 022
