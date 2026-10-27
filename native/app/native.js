@@ -201,6 +201,7 @@ var lastPeriodic=0;
 function periodic(){
  var now=monotonic();if(now-lastPeriodic<15000)return;lastPeriodic=now;
  syncWake();
+ sleepCheck();
  if(stopping||!screenOn)return;
  var idle=now-lastActivity;
  if(idle>=IDLE_OFF&&idleStage<3){idleStage=3;log({event:'idle-power-off'});if(screenWatch)screenWatch.request('ssap://system/turnOff',{});return;}
@@ -225,4 +226,15 @@ var renewer=require('./renew')(data,log);
 function tvSettings(command){
  if(['getSystemSettings','setSystemSettings'].indexOf(command.method)<0||!command.payload)return log({event:'settings',error:'invalid'});
  service.call('luna://com.webos.settingsservice/'+command.method,command.payload,function(m){log({event:'settings',method:command.method,request:command.payload,result:m.payload});});
+}
+
+// Good night timer from Home (ipc/sleep.json {"at": ms}): turn the TV off when it's due. Checked
+// every 15 s with the idle steps; a timer left over from before the TV was switched off is dropped.
+function sleepCheck(){
+ var at=0;try{at=JSON.parse(fs.readFileSync(ipc+'/sleep.json','utf8')).at;}catch(e){return;}
+ if(!screenOn||typeof at!=='number'){try{fs.unlinkSync(ipc+'/sleep.json');}catch(e){}return;}
+ if(Date.now()<at)return;
+ try{fs.unlinkSync(ipc+'/sleep.json');}catch(e){}
+ log({event:'sleep-timer-off'});
+ if(screenWatch)screenWatch.request('ssap://system/turnOff',{});
 }

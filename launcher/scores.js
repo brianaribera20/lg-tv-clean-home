@@ -57,6 +57,10 @@
         (c[2] ? '<div class="sc-odds-s">' + c[2] + '</div>' : '') + '</div>';
     }).join('') + '</div>';
   }
+  function glow(t) {
+    var n = parseInt(t.color, 16);
+    return isNaN(n) ? 'rgba(255,255,255,0.5)' : 'rgba(' + [n >> 16 & 255, n >> 8 & 255, n & 255].join(',') + ',0.9)';
+  }
   function plate(src, cls) { return '<span class="' + cls + '"><img src="' + esc(src) + '" alt=""></span>'; }
 
   function card(t) {
@@ -77,7 +81,10 @@
         plate(logo(league, n.opp, 96), 'sc-opp') + '<span class="sc-opp-name">' + esc(n.oppName) + '</span></div>' +
         '<div class="sc-when">' + esc(when(n.date)) + '</div>' + oddsRow(n.odds, t.abbr, n.opp);
     }
-    return '<div class="score-card' + (t.live ? ' live' : '') + '" style="' + tint(t) + '">' + html + '</div>';
+    // Game day: the team plays today (or is live) -> a soft pulsing glow in its colour.
+    var today = t.live || (t.next && new Date(t.next.date).toDateString() === new Date().toDateString());
+    var glowEl = today ? '<span class="sc-glow" style="box-shadow:0 0 28px 2px ' + glow(t) + '"></span>' : '';
+    return '<div class="score-card' + (t.live ? ' live' : '') + (today ? ' gameday' : '') + '" style="' + tint(t) + '">' + glowEl + html + '</div>';
   }
 
   function render(teams) {
@@ -85,11 +92,38 @@
       if (!!a.live !== !!b.live) return a.live ? -1 : 1;
       return (a.next ? Date.parse(a.next.date) : Infinity) - (b.next ? Date.parse(b.next.date) : Infinity);
     });
+    var keep = focused;
     box.innerHTML = teams.map(card).join('');
+    if (keep >= 0) setFocus(keep);
     box.className = teams.length ? 'shown' : '';
     return teams.some(function (t) { return t.live; });
   }
-  window.ScoresCard = {render: render};
+  // Remote-control focus (app.js "cards" zone): Up from the dock lands here, OK opens YouTube TV,
+  // where these games are watched.
+  var focused = -1;
+  function cards() { return box.querySelectorAll('.score-card'); }
+  function setFocus(i) {
+    var list = cards();
+    if (focused >= 0 && list[focused]) list[focused].classList.remove('focused');
+    focused = Math.max(0, Math.min(i, list.length - 1));
+    if (list[focused]) list[focused].classList.add('focused');
+  }
+  window.ScoresCard = {
+    render: render,
+    count: function () { return box.className === 'shown' ? cards().length : 0; },
+    focusNearest: function (x) {
+      var list = cards(), best = 0, bestDistance = Infinity;
+      for (var i = 0; i < list.length; i++) {
+        var r = list[i].getBoundingClientRect(), d = Math.abs(r.left + r.width / 2 - x);
+        if (d < bestDistance) { bestDistance = d; best = i; }
+      }
+      setFocus(best);
+    },
+    move: function (step) { setFocus(focused + step); },
+    blur: function () { var list = cards(); if (list[focused]) list[focused].classList.remove('focused'); focused = -1; },
+    centerX: function () { var c = cards()[focused]; if (!c) return 960; var r = c.getBoundingClientRect(); return r.left + r.width / 2; },
+    watchApp: function () { return 'youtube.leanback.ytv.v1'; }
+  };
 
   var timer = null;
   function refresh() {

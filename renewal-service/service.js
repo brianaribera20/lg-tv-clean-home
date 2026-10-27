@@ -85,6 +85,23 @@ service.register('scores',function(m){
  scoresBusy.push(m);if(scoresBusy.length>1)return;
  scores(function(teams){var waiting=scoresBusy;scoresBusy=[];waiting.forEach(function(w){w.respond({returnValue:true,teams:teams});});});
 });
+// Good night timer (sleep.js): the off time lives in ipc/sleep.json; Home Helper turns the TV off.
+var sleepPath=ipcDir+'/sleep.json';
+function sleepAt(){try{var at=JSON.parse(fs.readFileSync(sleepPath,'utf8')).at;return typeof at==='number'&&at>Date.now()?at:0;}catch(e){return 0;}}
+service.register('sleepStatus',function(m){
+ if(!fromHome(m)){m.respond({returnValue:false});return;}
+ m.respond({returnValue:true,at:sleepAt()});
+});
+service.register('setSleep',function(m){
+ if(!fromHome(m)){m.respond({returnValue:false});return;}
+ var minutes=m.payload&&m.payload.minutes;
+ if(typeof minutes!=='number'||minutes<0||minutes>240){m.respond({returnValue:false,errorText:'Invalid request'});return;}
+ try{
+  if(minutes===0){try{fs.unlinkSync(sleepPath);}catch(e){}}
+  else{fs.writeFileSync(sleepPath+'.tmp',JSON.stringify({at:Date.now()+minutes*60000}),{mode:438});fs.chmodSync(sleepPath+'.tmp',438);fs.renameSync(sleepPath+'.tmp',sleepPath);}
+  m.respond({returnValue:true,at:sleepAt()});
+ }catch(e){m.respond({returnValue:false,errorText:'Home Helper data unavailable'});}
+});
 service.register('wakeStatus',function(m){
  if(!fromHome(m)){m.respond({returnValue:false,errorText:'caller-not-authorized'});return;}
  m.respond({returnValue:true,enabled:wakeEnabled()});

@@ -47,7 +47,7 @@
     ambientLayers = [getElement("ambientA"), getElement("ambientB")],
     ambientIndex = 0,
     ambientColor = null,
-    topButtons = [getElement("btnInputs"), getElement("btnWifi"), getElement("btnSettings")],
+    topButtons = [getElement("btnInputs"), getElement("btnWifi"), getElement("btnSleep"), getElement("btnSettings")],
     inputsPanel = getElement("inputsPanel"),
     tiles = [],
     focusZone = "grid",
@@ -775,6 +775,7 @@
     topButtons[focusedTopButton].classList.add("focused");
   }
   function setFocusZone(zone) {
+    focusZone !== zone && "cards" === focusZone && window.ScoresCard && ScoresCard.blur();
     focusZone !== zone && ("top" === focusZone && topButtons[focusedTopButton].classList.remove("focused"), "grid" === focusZone && (tiles[focusedTile] && tiles[focusedTile].el.classList.remove("focused"), focusGlassVisible = false, focusGlass.style.opacity = "0"), focusZone = zone);
   }
   function updateClock() {
@@ -794,7 +795,36 @@
       getElement("date").textContent = weekdays[now.getDay()] + "  " + now.getDate() + " " + months[now.getMonth()];
     }
   }
+  function nearestTopButton(x) {
+    var best = 0, bestDistance = 1 / 0;
+    topButtons.forEach(function (e, t) {
+      var r = e.getBoundingClientRect(), d = Math.abs(r.left + r.width / 2 - x);
+      d < bestDistance && (bestDistance = d, best = t);
+    });
+    return best;
+  }
+  function nearestDockTile(x) {
+    var best = 0, bestDistance = 1 / 0;
+    for (var t = 0; t < Math.min(columnCount, tiles.length); t++) {
+      var d = Math.abs(tileLeft(t) + CARD_WIDTH / 2 - x);
+      d < bestDistance && (bestDistance = d, best = t);
+    }
+    return best;
+  }
+  // Score cards zone (scores.js) sits between the top buttons and the dock.
+  function focusCards(x) {
+    if (!window.ScoresCard || !ScoresCard.count()) return false;
+    setFocusZone("cards");
+    document.body.classList.remove("scrolled");
+    ScoresCard.focusNearest(x);
+    return true;
+  }
   function activateTopButton(index) {
+    // Good night (sleep.js): turn the TV off in 30 minutes, or cancel.
+    if (topButtons[index] && "btnSleep" === topButtons[index].id) {
+      window.SleepTimer && SleepTimer.toggle();
+      return;
+    }
     0 === index ? function () {
       if (inputsPanel.innerHTML = "", inputRows = [], (window.TV_APPS && TV_APPS.inputs || []).forEach(function (e) {
         addInputRow("M18,7V4c0,-1.1 -0.9,-2 -2,-2H8C6.9,2 6,2.9 6,4v3H5v6l3,6v3h8v-3l3,-6V7H18zM8,4h8v3h-2V5h-1v2h-2V5h-1v2H8V4z", e.label, e.appId);
@@ -941,13 +971,28 @@
           }
           closeInputs();
         }
+      } else if ("cards" === focusZone) {
+        if (37 === key) {
+          ScoresCard.move(-1);
+        } else if (39 === key) {
+          ScoresCard.move(1);
+        } else if (38 === key) {
+          focusTopButton(nearestTopButton(ScoresCard.centerX()));
+        } else if (40 === key || key === KEY_BACK || 27 === key) {
+          focusTile(nearestDockTile(ScoresCard.centerX()));
+        } else if (key === KEY_OK) {
+          launchApp(ScoresCard.watchApp(), "YouTube TV");
+        } else {
+          return;
+        }
       } else if ("top" === focusZone) {
         if (37 === key) {
           focusTopButton(focusedTopButton - 1);
         } else if (39 === key) {
           focusTopButton(focusedTopButton + 1);
         } else if (40 === key) {
-          focusTile(0 === rowFor(focusedTile) ? focusedTile : 0);
+          var buttonBox = topButtons[focusedTopButton].getBoundingClientRect();
+          focusCards(buttonBox.left + buttonBox.width / 2) || focusTile(0 === rowFor(focusedTile) ? focusedTile : 0);
         } else if (key === KEY_OK) {
           activateTopButton(focusedTopButton);
         } else if (key !== KEY_BACK) {
@@ -961,7 +1006,7 @@
         } else if (39 === key) {
           column < columnCount - 1 && focusedTile < lastIndex && focusTile(focusedTile + 1);
         } else if (38 === key) {
-          0 === rowFor(focusedTile) ? focusTopButton((tileCenter = tileLeft(focusedTile) + CARD_WIDTH / 2, nearestButton = 0, nearestDistance = 1 / 0, topButtons.forEach(function (e, t) {
+          0 === rowFor(focusedTile) ? focusCards(tileLeft(focusedTile) + CARD_WIDTH / 2) || focusTopButton((tileCenter = tileLeft(focusedTile) + CARD_WIDTH / 2, nearestButton = 0, nearestDistance = 1 / 0, topButtons.forEach(function (e, t) {
             var n = e.getBoundingClientRect(),
               a = Math.abs(n.left + n.width / 2 - tileCenter);
             a < nearestDistance && (nearestDistance = a, nearestButton = t);

@@ -450,3 +450,66 @@ header { will-change: transform, opacity; }
 .sc-w { background: rgba(48, 209, 88, 0.85); }
 .sc-l { background: rgba(255, 69, 58, 0.8); }
 
+/* ---- score card focus + game day (scores.js) ---- */
+.score-card {
+  position: relative;
+  transition: transform 220ms cubic-bezier(0.25, 1.2, 0.5, 1);
+}
+.score-card.focused {
+  transform: scale(1.05);
+  border-color: rgba(255, 255, 255, 0.85);
+}
+/* Game day: a glow in the team colour that breathes by opacity only (GPU, no repaint). */
+.sc-glow {
+  position: absolute;
+  top: -2px; right: -2px; bottom: -2px; left: -2px;
+  border-radius: 32px;
+  opacity: 0.35;
+  will-change: opacity;
+  animation: gameday 2.6s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+@keyframes gameday { from { opacity: 0.25; } to { opacity: 0.9; } }
+
+/* ---- weather warning capsule on the greeting line (weather.js) ---- */
+#wxAlert {
+  display: none;
+  margin-left: 18px;
+  padding: 4px 14px;
+  border-radius: 12px;
+  align-self: center;
+  background: rgba(255, 159, 10, 0.9);
+  color: #1c1c1e;
+  font-size: 20px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+#wxAlert.shown { display: inline-block; }
+#wxAlert.severe { background: rgba(255, 59, 48, 0.92); color: #fff; }
+
+/* ---- Good night button while counting down (sleep.js) ---- */
+#btnSleep.sleeping { background: rgba(94, 92, 230, 0.55); }
+#btnSleep.sleeping.focused { background: #fff; }
+
+/* Forecast above the date, both beside the clock (weather.js). */
+#dateBlock { display: flex; flex-direction: column; margin-bottom: 18px; }
+#dateBlock #date { margin-bottom: 0; }
+#forecast {
+  display: none;
+  margin-bottom: 4px;
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: rgba(235, 235, 245, 0.5);
+  white-space: pre;
+}
+#forecast.shown { display: block; }
+
+/* Good night: a round moon button; text only while counting down. */
+#btnSleep { padding: 0 22px; }
+#btnSleep svg { margin-right: 0; }
+#btnSleep span { display: none; }
+#btnSleep.sleeping { padding: 0 30px 0 24px; }
+#btnSleep.sleeping svg { margin-right: 14px; }
+#btnSleep.sleeping span { display: inline; }
+
