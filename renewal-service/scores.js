@@ -4,13 +4,14 @@
 // in Home would stutter the UI; Home only receives a few fields per team.
 //   team endpoint (~22 KB, every call): live game, last result, record, logo
 //   schedule (cached 6 h in scores-cache.json): the next upcoming game
+//   game summary (~130 KB, cached 1 h per game): the betting line for that next game
 var fs = require('fs'), https = require('https');
 var TEAMS = [
   {sport: 'football', league: 'nfl', team: 'bal'},
   {sport: 'football', league: 'nfl', team: 'wsh'},
   {sport: 'hockey', league: 'nhl', team: 'wsh'}
 ];
-var SCHEDULE_TTL = 6 * 3600000;
+var SCHEDULE_TTL = 6 * 3600000, ODDS_TTL = 3600000;
 
 function get(path, done) {
   var finished = false;
@@ -43,14 +44,19 @@ function game(event, abbr) {
   var type = comp.status && comp.status.type || {};
   var tv = (comp.broadcasts || []).map(function (b) { return b.media && b.media.shortName || (b.names || [])[0]; }).filter(Boolean)[0] || '';
   return {
-    state: type.state, detail: type.shortDetail || '', date: event.date, home: us.homeAway === 'home',
+    id: event.id, state: type.state, detail: type.shortDetail || '', date: event.date, home: us.homeAway === 'home',
     opp: them.team && them.team.abbreviation, oppName: them.team && (them.team.shortDisplayName || them.team.displayName),
     us: score(us), them: score(them), won: us.winner === true, tv: tv
   };
 }
 
 function cacheFile(dir) { return dir + '/scores-cache.json'; }
-function readCache(dir) { try { return JSON.parse(fs.readFileSync(cacheFile(dir), 'utf8')); } catch (e) { return {}; } }
+// Bump CACHE_VERSION when the cached shape changes (v2: games carry their ESPN id for odds).
+var CACHE_VERSION = 2;
+function readCache(dir) {
+  try { var c = JSON.parse(fs.readFileSync(cacheFile(dir), 'utf8')); return c.v === CACHE_VERSION ? c : {v: CACHE_VERSION}; }
+  catch (e) { return {v: CACHE_VERSION}; }
+}
 function writeCache(dir, cache) { try { fs.writeFileSync(cacheFile(dir), JSON.stringify(cache)); } catch (e) {} }
 
 function schedule(t, cache, done) {
@@ -65,6 +71,27 @@ function schedule(t, cache, done) {
     var finished = events.filter(function (g) { return g.state === 'post'; }).slice(-1);
     cache[key] = {at: now, events: finished.concat(upcoming)};
     done(cache[key].events);
+  });
+}
+
+function signed(n) { return typeof n === 'number' ? (n > 0 ? '+' + n : String(n)) : null; }
+
+// Sportsbook line for one upcoming game (ESPN's pickcenter, currently DraftKings): the headline
+// line ("BUF -3.5", or the moneyline favourite in hockey), the over/under, and both moneylines.
+function odds(t, g, cache, done) {
+  if (!g || !g.id) return done(null);
+  var key = 'odds/' + g.id, hit = cache[key];
+  if (hit && Date.now() - hit.at < ODDS_TTL) return done(hit.odds);
+  get(t.sport + '/' + t.league + '/summary?event=' + encodeURIComponent(g.id), function (err, body) {
+    if (err || !body) return done(hit ? hit.odds : null);
+    var pc = (body.pickcenter || [])[0], result = null;
+    if (pc) {
+      var mine = g.home ? pc.homeTeamOdds : pc.awayTeamOdds, theirs = g.home ? pc.awayTeamOdds : pc.homeTeamOdds;
+      result = {book: pc.provider && pc.provider.name || '', line: pc.details || '', total: pc.overUnder || null,
+        mlUs: signed(mine && mine.moneyLine), mlThem: signed(theirs && theirs.moneyLine)};
+    }
+    cache[key] = {at: Date.now(), odds: result};
+    done(result);
   });
 }
 
@@ -91,8 +118,15 @@ module.exports = function (dir) {
               live: current && current.state === 'in' ? current : null, next: next, last: last
             };
           }
-          out[i] = entry;
-          if (--pending === 0) { writeCache(dir, cache); done(out.filter(Boolean)); }
+          odds(t, entry && entry.next, cache, function (o) {
+            if (entry && entry.next) entry.next.odds = o;
+            out[i] = entry;
+            if (--pending === 0) {
+              // Drop cached lines for games that are no longer anyone's next game.
+              Object.keys(cache).forEach(function (k) { if (k.indexOf('odds/') === 0 && Date.now() - cache[k].at > 2 * 86400000) delete cache[k]; });
+              writeCache(dir, cache); done(out.filter(Boolean));
+            }
+          });
         });
       });
     });

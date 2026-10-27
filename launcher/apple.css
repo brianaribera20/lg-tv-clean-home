@@ -363,9 +363,9 @@ body.idle header, body.idle #viewport, body.idle #hero, body.idle #toast {
 header { will-change: transform, opacity; }
 
 .score-card {
-  width: 380px;
+  width: 400px;
   margin-left: 24px;
-  padding: 24px 28px 22px;
+  padding: 24px 24px 22px;
   border-radius: 30px;
   border: 1px solid rgba(255, 255, 255, 0.14);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
@@ -376,17 +376,17 @@ header { will-change: transform, opacity; }
 .sc-top { display: flex; align-items: center; }
 /* Bare transparent logos (ESPN's dark-background set), no plate. */
 .sc-logo, .sc-opp { display: inline-block; flex-shrink: 0; }
-.sc-logo { width: 72px; height: 72px; margin-right: 16px; }
+.sc-logo { width: 64px; height: 64px; margin-right: 14px; }
 .sc-opp { width: 44px; height: 44px; }
 .sc-logo img, .sc-opp img { display: block; width: 100%; height: 100%; }
-.sc-name { font-size: 30px; font-weight: 700; letter-spacing: -0.02em; }
+.sc-name { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sc-rec { margin-top: 2px; font-size: 19px; font-weight: 600; color: rgba(255, 255, 255, 0.62); white-space: pre; }
 
 .sc-label {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin: 18px 0 10px;
+  margin: 16px 0 10px;
   padding-top: 14px;
   border-top: 1px solid rgba(255, 255, 255, 0.14);
   font-size: 15px;
@@ -423,7 +423,21 @@ header { will-change: transform, opacity; }
   color: #fff;
 }
 
-.sc-last { margin-top: 12px; font-size: 18px; font-weight: 600; color: rgba(255, 255, 255, 0.62); white-space: pre; }
+.sc-odds {
+  display: flex;
+  margin-top: 14px;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.22);
+}
+.sc-odds > div { flex: 1; padding: 8px 12px; text-align: center; }
+.sc-odds > div + div { border-left: 1px solid rgba(255, 255, 255, 0.12); }
+.sc-odds-k { font-size: 13px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255, 255, 255, 0.55); }
+.sc-odds-v { margin-top: 2px; font-size: 20px; font-weight: 700; white-space: nowrap; }
+.sc-odds-s { margin-top: 1px; font-size: 15px; font-weight: 600; color: rgba(255, 255, 255, 0.55); white-space: nowrap; }
+
+.sc-id { flex: 1; min-width: 0; }
+.sc-last { margin-left: 10px; text-align: right; font-size: 18px; font-weight: 700; color: rgba(255, 255, 255, 0.85); white-space: nowrap; }
+.sc-last-opp { margin-top: 3px; font-size: 15px; font-weight: 600; color: rgba(255, 255, 255, 0.55); }
 .sc-res {
   display: inline-block;
   margin-right: 8px;

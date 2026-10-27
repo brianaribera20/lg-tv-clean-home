@@ -40,11 +40,32 @@
   function label(text, tv, cls) {
     return '<div class="sc-label' + cls + '"><span>' + text + '</span>' + (tv ? '<span class="sc-tv">' + esc(tv) + '</span>' : '') + '</div>';
   }
+  // Betting line strip for the next game (sportsbook via ESPN). Every number names its team:
+  // the spread already reads "WSH -4.5"; the over/under is the game's combined total; the
+  // moneyline shows both sides, ours first. In hockey ESPN's headline line is the moneyline
+  // itself, so the spread cell is left out.
+  function oddsRow(o, us, them) {
+    if (!o) return '';
+    var cells = [];
+    var isMoneyline = o.line && (o.line.indexOf(o.mlUs) >= 0 || o.line.indexOf(o.mlThem) >= 0);
+    if (o.line && !isMoneyline) cells.push(['Spread', esc(o.line), 'favorite']);
+    if (o.total) cells.push(['O/U', esc(o.total), 'total pts']);
+    if (o.mlUs) cells.push(['Moneyline', esc(us) + ' ' + esc(o.mlUs), o.mlThem ? esc(them) + ' ' + esc(o.mlThem) : '']);
+    if (!cells.length) return '';
+    return '<div class="sc-odds">' + cells.map(function (c) {
+      return '<div><div class="sc-odds-k">' + c[0] + '</div><div class="sc-odds-v">' + c[1] + '</div>' +
+        (c[2] ? '<div class="sc-odds-s">' + c[2] + '</div>' : '') + '</div>';
+    }).join('') + '</div>';
+  }
   function plate(src, cls) { return '<span class="' + cls + '"><img src="' + esc(src) + '" alt=""></span>'; }
 
   function card(t) {
-    var league = t.league, html = '<div class="sc-top">' + plate(t.logo, 'sc-logo') + '<div><div class="sc-name">' + esc(t.name) +
-      '</div><div class="sc-rec">' + esc(t.record) + (t.record ? '  ·  ' : '') + esc(league) + '</div></div></div>';
+    var league = t.league, l = !t.live && t.last;
+    // Last result sits in the top-right corner (keeps the card short enough to leave air above the dock).
+    var lastBadge = l ? '<div class="sc-last"><span class="sc-res ' + (l.won ? 'sc-w' : 'sc-l') + '">' + (l.won ? 'W' : 'L') + '</span>' +
+      esc(l.us) + '–' + esc(l.them) + '<div class="sc-last-opp">' + (l.home ? 'vs ' : 'at ') + esc(l.opp) + '</div></div>' : '';
+    var html = '<div class="sc-top">' + plate(t.logo, 'sc-logo') + '<div class="sc-id"><div class="sc-name">' + esc(t.name) +
+      '</div><div class="sc-rec">' + esc(t.record) + (t.record ? '  ·  ' : '') + esc(league) + '</div></div>' + lastBadge + '</div>';
     if (t.live) {
       var g = t.live;
       html += label('<span class="sc-dot"></span>LIVE  ·  ' + esc(g.detail), g.tv, ' sc-live-label') +
@@ -54,12 +75,7 @@
       var n = t.next;
       html += label('Next game', n.tv, '') + '<div class="sc-match"><span class="sc-vs">' + (n.home ? 'vs' : 'at') + '</span>' +
         plate(logo(league, n.opp, 96), 'sc-opp') + '<span class="sc-opp-name">' + esc(n.oppName) + '</span></div>' +
-        '<div class="sc-when">' + esc(when(n.date)) + '</div>';
-    }
-    if (t.last && !t.live) {
-      var l = t.last;
-      html += '<div class="sc-last"><span class="sc-res ' + (l.won ? 'sc-w' : 'sc-l') + '">' + (l.won ? 'W' : 'L') + '</span>' +
-        esc(l.us) + '–' + esc(l.them) + '  ' + (l.home ? 'vs ' : 'at ') + esc(l.opp) + '</div>';
+        '<div class="sc-when">' + esc(when(n.date)) + '</div>' + oddsRow(n.odds, t.abbr, n.opp);
     }
     return '<div class="score-card' + (t.live ? ' live' : '') + '" style="' + tint(t) + '">' + html + '</div>';
   }

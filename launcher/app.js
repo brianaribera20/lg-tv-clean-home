@@ -19,7 +19,7 @@
     GLASS_WIDTH = 1.08 * CARD_WIDTH + 24,
     GLASS_HEIGHT = 1.08 * CARD_HEIGHT + 24,
     SHELF_SIDE = (GLASS_WIDTH - CARD_WIDTH) / 2 + 24,
-    DOCK_TOP = 680,
+    DOCK_TOP = 790,  // low enough to leave air under the score cards; row two sits below, one press down
     DOCK_HEIGHT = Math.round(GLASS_HEIGHT + 48),
     TILE_BASE = DOCK_TOP + Math.round((DOCK_HEIGHT - CARD_HEIGHT) / 2),
     ROW_STEP = CARD_HEIGHT + 90,
