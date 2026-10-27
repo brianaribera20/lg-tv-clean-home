@@ -10,7 +10,7 @@ var data=root+'/state';
 var ipc='/media/developer/apps/usr/palm/services/com.gathin.tvhome.renewal/ipc';
 function ensureIpc(){try{fs.mkdirSync(ipc);}catch(e){}try{fs.chmodSync(ipc,511);}catch(e){}}
 ensureIpc();
-var launchParams=JSON.parse(process.argv[2]||'{}'),automatic=launchParams.nativeHomeAuto===true;
+var launchParams=JSON.parse(process.argv[2]||'{}'),automatic=launchParams.nativeHomeAuto===true,restarted=launchParams.nativeHomeRestart===true;
 // Optional app to open when the TV is switched on (wake-app.json: {"id":"..."}); Home otherwise.
 var wakeApp=null;try{wakeApp=JSON.parse(fs.readFileSync(root+'/wake-app.json','utf8')).id||null;}catch(e){}
 // Home settings can switch it off (state/wake.json {"enabled":false}); read at each wake.
@@ -75,7 +75,7 @@ function screenLog(x){
  log(x);diagnostic('monitor');
 }
 function cancelResume(){resumePendingUntil=0;resumeGuardUntil=0;lgHomeSince=null;}
-log({event:'start',pid:process.pid,uid:process.getuid(),automatic:automatic,diagnosticsSchema:1});
+log({event:'start',pid:process.pid,uid:process.getuid(),automatic:automatic,restarted:restarted,diagnosticsSchema:1});
 fs.writeFileSync(data+'/control.json','{}',{mode:432});fs.chmodSync(data+'/control.json',432);
 function launch(id,done,params){var request=++launchSequence;diagnostic('launch-request',{launchSequence:request,id:id});var settled=false;var deadline=setTimeout(function(){if(settled)return;settled=true;lastLaunchSettledAt=monotonic();log({event:'launch-timeout',id:id});diagnostic('launch-timeout',{launchSequence:request,id:id});if(done)done(false);},3000);service.call('luna://com.webos.applicationManager/launch',params?{id:id,params:params}:{id:id},function(m){if(settled)return;settled=true;lastLaunchSettledAt=monotonic();clearTimeout(deadline);log({event:'launch',id:id,result:m.payload});diagnostic('launch-result',{launchSequence:request,id:id,returnValue:!!(m.payload&&m.payload.returnValue===true)});if(done)done(m.payload&&m.payload.returnValue===true);});}
 var visitingLG=false,suppressReturnUntil=0;
@@ -113,8 +113,11 @@ function readHomeRequest(){
   else respond({returnValue:false,errorText:'Invalid Home request'});
  }catch(e){respond({returnValue:false,errorText:String(e)});}
 }
-function finish(code,signal){if(stopping)return;stopping=true;if(screenWatch)screenWatch.close();clearInterval(timer);log({event:'worker-exit',code:code,signal:signal});if(policy.shouldBlock(code,signal))fs.writeFileSync(data+'/blocked','stopped',{mode:420});
- function end(){try{fs.unlinkSync(pidPath);}catch(e){}process.exit(code===22?0:(code||0));}
+function finish(code,signal){if(stopping)return;stopping=true;if(screenWatch)screenWatch.close();clearInterval(timer);log({event:'worker-exit',code:code,signal:signal});var stall=policy.isStall(code,watchdogKilled),restart=false;
+ if(stall){var history=[];try{history=JSON.parse(fs.readFileSync(data+'/restarts.json','utf8'));}catch(e){}
+  var r=policy.allowRestart(history,Date.now());restart=r.allowed;try{fs.writeFileSync(data+'/restarts.json',JSON.stringify(r.history),{mode:420});}catch(e){}}
+ if(restart)log({event:'stall-restart'});else if(policy.shouldBlock(code,signal))fs.writeFileSync(data+'/blocked','stopped',{mode:420});
+ function end(){if(restart)restartSoon();try{fs.unlinkSync(pidPath);}catch(e){}process.exit(code===22?0:(code||0));}
  // Let an already-issued custom-Home request settle before the final LG launch.
  var finishDeadline=monotonic()+3200;
  function cleaned(){if(code!==22){end();return;}
@@ -123,11 +126,19 @@ function finish(code,signal){if(stopping)return;stopping=true;if(screenWatch)scr
  }
  if(ready){var c=cp.spawn(root+'/relay',['cleanup'],{stdio:'ignore'});c.on('exit',function(n){log({event:'cleanup',code:n});cleaned();});}else cleaned();
 }
+// Start a fresh controller once this one has exited and released controller.lock. It skips the
+// Home launch, so whatever is on screen (a show in YouTube TV) stays put.
+function restartSoon(){
+ try{fs.unlinkSync(data+'/blocked');}catch(e){}
+ try{cp.spawn(process.execPath,['-e',"setTimeout(function(){require('child_process').spawn(process.argv[1],[process.argv[2],'--controller'],{detached:true,stdio:'ignore'}).unref();},3000)",root+'/detach',JSON.stringify({nativeHomeRestart:true})],{detached:true,stdio:'ignore'}).unref();}
+ catch(e){log({event:'stall-restart-failed',error:String(e)});block();}
+}
+var watchdogKilled=false;
 function start(){lastAck=monotonic();child=cp.spawn(root+'/relay',[],{stdio:['pipe','pipe','pipe']});log({event:'worker-start',pid:child.pid});child.stderr.on('data',function(b){log({stderr:String(b)});});child.on('error',function(e){log({error:String(e)});finish(1);});child.on('exit',finish);
  child.stdout.on('data',function(b){buffer+=b;var i;while((i=buffer.indexOf('\n'))>=0){var line=buffer.slice(0,i);buffer=buffer.slice(i+1);if(line==='P'){lastAck=monotonic();continue;}if(line==='ACT'){activity();continue;}log({event:'worker',message:line});if(line==='BACK_DOWN'){cancelResume();screenPolicy.back(true,monotonic());}if(line==='BACK_UP')screenPolicy.back(false,monotonic());if(line==='HOME'){wakeUntil=0;screenPolicy.clearBack();homeSequence++;lastHomeAt=monotonic();diagnostic('home');}if(line==='READY'){ready=true;lastAck=monotonic();child.stdin.write(homeControl.enabled()?'E':'D');}if(line==='LGHOME'&&!stopping)visitLG();if(line==='HOME'&&homeControl.enabled()&&!visitingLG&&!stopping&&!launching){suppressReturnUntil=0;launching=true;launch('com.gathin.tvhome',function(ok){launching=false;if(!ok)child.stdin.end();});}}});
  child.stdin.on('error',function(){});
 }
-var timer=setInterval(function(){if(stopping)return;readHomeRequest();periodic();try{var raw=fs.readFileSync(data+'/control.json','utf8');if(raw!==lastCommand){lastCommand=raw;var command=JSON.parse(raw);diagnosticCommand(command.cmd,command.nonce);if(command.cmd==='startup-status')service.call('luna://com.local.nativehome.service/status',{},function(r){log({event:'startup-status',result:r.payload});});if(command.cmd==='stop'&&child)child.stdin.write('Q');if(command.cmd==='renew-now'&&renewer)renewer.run(true);if(command.cmd==='settings')tvSettings(command);if(command.cmd==='stall-worker'&&child)child.stdin.write('S');if(command.cmd==='stall-controller'){cp.spawn(root+'/resume',[String(process.pid)],{stdio:'ignore'});log({event:'simulate-controller-stall'});process.kill(process.pid,'SIGSTOP');}}}catch(e){}
+var timer=setInterval(function(){if(stopping)return;readHomeRequest();periodic();try{var raw=fs.readFileSync(data+'/control.json','utf8');if(raw!==lastCommand){lastCommand=raw;var command=JSON.parse(raw);diagnosticCommand(command.cmd,command.nonce);if(command.cmd==='startup-status')service.call('luna://com.local.nativehome.service/status',{},function(r){log({event:'startup-status',result:r.payload});});if(command.cmd==='stop'&&child)child.stdin.write('Q');if(command.cmd==='simulate-stall'&&child)child.stdin.write('S');if(command.cmd==='renew-now'&&renewer)renewer.run(true);if(command.cmd==='settings')tvSettings(command);if(command.cmd==='stall-worker'&&child)child.stdin.write('S');if(command.cmd==='stall-controller'){cp.spawn(root+'/resume',[String(process.pid)],{stdio:'ignore'});log({event:'simulate-controller-stall'});process.kill(process.pid,'SIGSTOP');}}}catch(e){}
  if(resumePendingUntil&&ready&&!launching&&!visitingLG&&homeControl.enabled()){
   var resumeDue=resumePendingUntil;resumePendingUntil=0;
   var target=wakeTarget();if(target){wakeId=target;wakeUntil=monotonic()+12000;wakeTries=0;}
@@ -144,9 +155,9 @@ var timer=setInterval(function(){if(stopping)return;readHomeRequest();periodic()
   resumeRetries++;launching=true;log({event:'resume-retry',attempt:resumeRetries});
   launch(wakeTarget()||'com.gathin.tvhome',function(ok){launching=false;if(!ok)log({event:'resume-retry-failed'});});
  }
- if(child){if(policy.expired(lastAck,monotonic())){log({event:'worker-watchdog'});child.kill('SIGKILL');return;}child.stdin.write('P');}
+ if(child){if(policy.expired(lastAck,monotonic())){log({event:'worker-watchdog'});watchdogKilled=true;child.kill('SIGKILL');return;}child.stdin.write('P');}
 },400);
-setTimeout(function(){if(!homeControl.enabled()){start();return;}launch('com.gathin.tvhome',function(ok){if(ok)start();else {block();process.exit(3);}
+setTimeout(function(){if(restarted||!homeControl.enabled()){start();return;}launch('com.gathin.tvhome',function(ok){if(ok)start();else {block();process.exit(3);}
  // Cold start: LG Home can take over late (seen at +86 s), so keep the wake app on top for 60 s.
  var target=ok&&automatic&&wakeTarget();if(target){wakeId=target;wakeUntil=monotonic()+60000;wakeTries=0;setTimeout(function(){launch(target,function(w){if(!w)log({event:'wake-app-failed',id:target});});},1500);}});},automatic?0:1000);
 

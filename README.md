@@ -50,6 +50,10 @@ The original project's README, with its full install guide and compatibility not
   the session when under 960 hours remain, which tops it back up to the ~1,000-hour maximum, and
   shares the result with Home's Settings.
   `devmode-renew.sh` is a second, independent path that runs daily on the Mac via launchd.
+- **Restarts itself after a stall** (`native/app/runtime-policy.js`): if the TV pauses the helper for
+  over 2 seconds, it used to switch itself off until started by hand. Now it restarts quietly (up to 3
+  times in 30 minutes) without leaving the app you're watching. Pressing Home three times still
+  switches it off; open **Home Helper** → **Start Helper** to bring it back.
 
 ### Fixes
 - **Settings ↔ helper files**: Home's settings service and Home Helper run as different users in

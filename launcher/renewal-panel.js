@@ -152,5 +152,5 @@
  }
  // Refresh each time the panel becomes visible (it is built after this file runs).
  var wasOpen=false;
- setInterval(function(){var panel=document.getElementById('renewalPanel'),open=!!panel&&panel.className.indexOf('hidden')<0;if(open&&!wasOpen)update();wasOpen=open;},700);
+ if(typeof setInterval==='function')setInterval(function(){var panel=document.getElementById('renewalPanel'),open=!!panel&&panel.className.indexOf('hidden')<0;if(open&&!wasOpen)update();wasOpen=open;},700);
 }());
