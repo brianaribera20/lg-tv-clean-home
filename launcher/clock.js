@@ -5,6 +5,8 @@
 // after an hour idle on this screen. Any button or pointer movement dismisses it and
 // is swallowed, so the press that wakes the screen never opens an app.
 (function () {
+  // Switched off in config.js (window.IDLE_CLOCK = false): no clock, from Home Helper or idle.
+  if (window.IDLE_CLOCK === false) return;
   var IDLE = 60 * 60000, last = Date.now(), visible = false, timer = null;
   var el = document.createElement('div');
   el.id = 'idleClock';
