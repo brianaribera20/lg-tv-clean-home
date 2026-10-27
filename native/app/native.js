@@ -127,7 +127,7 @@ function start(){lastAck=monotonic();child=cp.spawn(root+'/relay',[],{stdio:['pi
  child.stdout.on('data',function(b){buffer+=b;var i;while((i=buffer.indexOf('\n'))>=0){var line=buffer.slice(0,i);buffer=buffer.slice(i+1);if(line==='P'){lastAck=monotonic();continue;}if(line==='ACT'){activity();continue;}log({event:'worker',message:line});if(line==='BACK_DOWN'){cancelResume();screenPolicy.back(true,monotonic());}if(line==='BACK_UP')screenPolicy.back(false,monotonic());if(line==='HOME'){wakeUntil=0;screenPolicy.clearBack();homeSequence++;lastHomeAt=monotonic();diagnostic('home');}if(line==='READY'){ready=true;lastAck=monotonic();child.stdin.write(homeControl.enabled()?'E':'D');}if(line==='LGHOME'&&!stopping)visitLG();if(line==='HOME'&&homeControl.enabled()&&!visitingLG&&!stopping&&!launching){suppressReturnUntil=0;launching=true;launch('com.gathin.tvhome',function(ok){launching=false;if(!ok)child.stdin.end();});}}});
  child.stdin.on('error',function(){});
 }
-var timer=setInterval(function(){if(stopping)return;readHomeRequest();periodic();try{var raw=fs.readFileSync(data+'/control.json','utf8');if(raw!==lastCommand){lastCommand=raw;var command=JSON.parse(raw);diagnosticCommand(command.cmd,command.nonce);if(command.cmd==='startup-status')service.call('luna://com.local.nativehome.service/status',{},function(r){log({event:'startup-status',result:r.payload});});if(command.cmd==='stop'&&child)child.stdin.write('Q');if(command.cmd==='renew-now'&&renewer)renewer.run(true);if(command.cmd==='stall-worker'&&child)child.stdin.write('S');if(command.cmd==='stall-controller'){cp.spawn(root+'/resume',[String(process.pid)],{stdio:'ignore'});log({event:'simulate-controller-stall'});process.kill(process.pid,'SIGSTOP');}}}catch(e){}
+var timer=setInterval(function(){if(stopping)return;readHomeRequest();periodic();try{var raw=fs.readFileSync(data+'/control.json','utf8');if(raw!==lastCommand){lastCommand=raw;var command=JSON.parse(raw);diagnosticCommand(command.cmd,command.nonce);if(command.cmd==='startup-status')service.call('luna://com.local.nativehome.service/status',{},function(r){log({event:'startup-status',result:r.payload});});if(command.cmd==='stop'&&child)child.stdin.write('Q');if(command.cmd==='renew-now'&&renewer)renewer.run(true);if(command.cmd==='settings')tvSettings(command);if(command.cmd==='stall-worker'&&child)child.stdin.write('S');if(command.cmd==='stall-controller'){cp.spawn(root+'/resume',[String(process.pid)],{stdio:'ignore'});log({event:'simulate-controller-stall'});process.kill(process.pid,'SIGSTOP');}}}catch(e){}
  if(resumePendingUntil&&ready&&!launching&&!visitingLG&&homeControl.enabled()){
   var resumeDue=resumePendingUntil;resumePendingUntil=0;
   var target=wakeTarget();if(target){wakeId=target;wakeUntil=monotonic()+12000;wakeTries=0;}
@@ -217,3 +217,11 @@ try{
 
 // Developer Mode renewal on the TV itself (renew.js); runs regardless of Home control.
 var renewer=require('./renew')(data,log);
+
+// LG system settings (power-on behaviour, auto power-off), driven from the computer through
+// control.json: {"cmd":"settings","method":"getSystemSettings"|"setSystemSettings","payload":{...}}.
+// Limited to the settings service; the TV's answer is logged.
+function tvSettings(command){
+ if(['getSystemSettings','setSystemSettings'].indexOf(command.method)<0||!command.payload)return log({event:'settings',error:'invalid'});
+ service.call('luna://com.webos.settingsservice/'+command.method,command.payload,function(m){log({event:'settings',method:command.method,request:command.payload,result:m.payload});});
+}
