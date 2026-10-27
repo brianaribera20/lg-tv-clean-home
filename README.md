@@ -23,20 +23,32 @@ The original project's README, with its full install guide and compatibility not
 - **Moving background** (`launcher/orbs.js`): three soft orbs drift on smooth looping paths and take
   the focused app's colours (YouTube TV white and red, Prime Video blue and white…), from
   `launcher/app-colors.js`, which `make-tiles.py` writes.
-- **Idle clock** (`launcher/clock.js`): a large drifting clock replaces LG's screensaver.
+- **Header**: greeting, clock and date on the left; weather (Open-Meteo, with today's high/low,
+  tomorrow, and National Weather Service warnings) and round icon buttons — Inputs, Wi-Fi,
+  **Good night** (turns the TV off in 30 minutes) and Settings — on the right.
+- **Score cards** (`launcher/scores.js`, `renewal-service/scores.js`): Ravens, Commanders and
+  Capitals from ESPN — next game with time and channel, live score, last result, and the
+  DraftKings line with every number labelled by team. Up from the dock selects a card, OK opens
+  YouTube TV, and a card glows in its team colour on game day.
+- **Dock and rows** (`launcher/config.js`): YouTube TV, Prime Video, Apple TV, YouTube and Xbox
+  (HDMI 1) in the dock; Netflix, Hulu, Peacock and Alexa lead the next row, then everything else A–Z.
+- **Settings in the same style**: frosted panel, white-on-focus buttons, green switches; the
+  Developer Mode page shows Home Helper's real renewal status ("994 hours left").
+- **Idle clock** (`launcher/clock.js`): available, but switched off (`IDLE_CLOCK` in `config.js`).
 - **Plain splash** and a personal app title that you fill in (e.g. "Welcome, <your name>"), which is what webOS shows on its
   "Loading…" card — set with `TV_APP_TITLE` in `tv.local.env`.
 
 ### Home Helper additions
 - **YouTube TV at power-on** (`native/app/wake-app.json`): on wake or cold boot the helper opens
-  YouTube TV, and for 12 seconds after waking (15 after a cold boot) re-opens it if the TV restores
+  YouTube TV, and for 12 seconds after waking (60 after a cold boot) re-opens it if the TV restores
   Home on top. A
   **When the TV turns on** switch in Home → Settings turns this off.
-- **Idle timers**: after 1 hour without a button press, the clock screen (on Home); at 4 h 59 m, an
-  on-screen warning; at 5 hours, the TV turns off. LG's own screensaver is always declined. The
+- **Idle timers**: at 4 h 59 m without a button press, an on-screen warning; at 5 hours, the TV
+  turns off. The Good night button uses the same switch-off. LG's own screensaver is always declined. The
   remote relay reports activity (`ACT`) for this.
 - **Developer Mode renewal from the TV** (`native/app/renew.js`): checks LG every 6 hours and resets
-  the session when under 960 hours remain, which tops it back up to the ~1,000-hour maximum.
+  the session when under 960 hours remain, which tops it back up to the ~1,000-hour maximum, and
+  shares the result with Home's Settings.
   `devmode-renew.sh` is a second, independent path that runs daily on the Mac via launchd.
 
 ### Fixes
@@ -82,8 +94,9 @@ cp tv.local.env.example tv.local.env   # then fill in TV_HOST and TV_APP_TITLE (
 ```
 
 Personal settings:
-- **TV address and display name**: `tv.local.env` (not committed; copy `tv.local.env.example`).
-- **Dock and hidden apps**: `launcher/config.js` (`dockApps`, `hiddenApps`, `columns`).
+- **TV address, display name and weather location**: `tv.local.env` (not committed; copy `tv.local.env.example`).
+- **Dock, row order and hidden apps**: `launcher/config.js` (`dockApps`, `CONFIG_ORDER`, `hiddenApps`, `columns`).
+- **Teams**: `TEAMS` in `renewal-service/scores.js`.
 - **Power-on app**: `native/app/wake-app.json` (delete it to open Home instead), or the switch in
   Home → Settings.
 - **Mac renewal backup**: `devmode-renew.sh`, scheduled daily by a LaunchAgent (`~/Library/LaunchAgents/com.lg-tv-clean-home.devmode-renew.plist`);
@@ -100,7 +113,7 @@ Files kept out of git on purpose: `tv.local.env`, the TV pairing key (`.lgtv-key
 | Home | Opens this Home screen (never LG's) |
 | Home ×3 within 2 s | Emergency exit to LG Home; open **Home Helper** from LG's apps to resume |
 | Back inside an app | Normal Back; exiting an app returns to Home (LG Home can flash briefly — a webOS limit) |
-| Any button on the clock screen | Dismisses it without opening anything |
+| Up from the dock | Score cards; Up again reaches the header buttons |
 
 ## Undo
 
