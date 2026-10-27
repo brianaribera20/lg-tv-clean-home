@@ -71,6 +71,12 @@ service.register('uptime',function(m){
  if(!fromHome(m)){m.respond({returnValue:false,errorText:'caller-not-authorized'});return;}
  try{m.respond({returnValue:true,seconds:parseFloat(fs.readFileSync('/proc/uptime','utf8'))});}catch(e){m.respond({returnValue:false,errorText:String(e.code||e)});}
 });
+// Diagnostics from boot-helper.js: what Home tried at start-up (kept beside the shared files).
+service.register('bootNote',function(m){
+ if(!fromHome(m)){m.respond({returnValue:false});return;}
+ try{var up=parseFloat(fs.readFileSync('/proc/uptime','utf8'));fs.writeFileSync(ipcDir+'/boot-helper.json',JSON.stringify(Object.assign({uptimeAtNote:up,at:Date.now()},m.payload||{})),{mode:438});}catch(e){}
+ m.respond({returnValue:true});
+});
 service.register('wakeStatus',function(m){
  if(!fromHome(m)){m.respond({returnValue:false,errorText:'caller-not-authorized'});return;}
  m.respond({returnValue:true,enabled:wakeEnabled()});

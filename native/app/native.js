@@ -147,7 +147,8 @@ var timer=setInterval(function(){if(stopping)return;readHomeRequest();periodic()
  if(child){if(policy.expired(lastAck,monotonic())){log({event:'worker-watchdog'});child.kill('SIGKILL');return;}child.stdin.write('P');}
 },400);
 setTimeout(function(){if(!homeControl.enabled()){start();return;}launch('com.gathin.tvhome',function(ok){if(ok)start();else {block();process.exit(3);}
- var target=ok&&automatic&&wakeTarget();if(target){wakeId=target;wakeUntil=monotonic()+15000;wakeTries=0;setTimeout(function(){launch(target,function(w){if(!w)log({event:'wake-app-failed',id:target});});},1500);}});},automatic?0:1000);
+ // Cold start: LG Home can take over late (seen at +86 s), so keep the wake app on top for 60 s.
+ var target=ok&&automatic&&wakeTarget();if(target){wakeId=target;wakeUntil=monotonic()+60000;wakeTries=0;setTimeout(function(){launch(target,function(w){if(!w)log({event:'wake-app-failed',id:target});});},1500);}});},automatic?0:1000);
 
 
 process.on('exit',function(code){log({event:'controller-exit',code:code});});
