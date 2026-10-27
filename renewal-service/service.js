@@ -102,6 +102,12 @@ service.register('setSleep',function(m){
   m.respond({returnValue:true,at:sleepAt()});
  }catch(e){m.respond({returnValue:false,errorText:'Home Helper data unavailable'});}
 });
+// Home Helper's renewal result (helper renew.js copies it to ipc/renew.json) for Home settings.
+service.register('renewInfo',function(m){
+ if(!fromHome(m)){m.respond({returnValue:false});return;}
+ var info=null;try{info=JSON.parse(fs.readFileSync(ipcDir+'/renew.json','utf8'));}catch(e){}
+ m.respond({returnValue:true,info:info});
+});
 service.register('wakeStatus',function(m){
  if(!fromHome(m)){m.respond({returnValue:false,errorText:'caller-not-authorized'});return;}
  m.respond({returnValue:true,enabled:wakeEnabled()});

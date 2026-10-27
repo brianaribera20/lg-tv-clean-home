@@ -8,10 +8,10 @@
   "<div id=\"settingsMain\" class=\"renewal-card settings-main\"><div class=\"settings-heading\"><h2>Home settings</h2><span class=\"settings-edition\">No-root Edition</span></div><section class=\"settings-home\"><h3>Your Home screen</h3><p id=\"homeRoutingStatus\" class=\"settings-status\" aria-live=\"polite\">Checking Home control…</p>",
   "<div class=\"renewal-actions home-routing-actions\"><button id=\"homeRoutingToggle\" class=\"home-routing-switch\" role=\"switch\" aria-checked=\"false\" disabled>Change Home</button><button id=\"homeVisit\" class=\"home-visit-button\" aria-describedby=\"homeVisitHint\">Open LG Home</button></div><p id=\"homeVisitHint\" class=\"home-visit-hint\">Open LG Home once, keeping your Home choice.</p>",
   "</section>",
-  "<section class=\"settings-home\"><h3>When the TV turns on</h3><p id=\"wakeStatus\" class=\"settings-status\" aria-live=\"polite\">Checking…</p><div class=\"renewal-actions\"><button id=\"wakeToggle\" class=\"home-routing-switch\" role=\"switch\" aria-checked=\"false\" disabled>Open YouTube TV</button></div></section>",
-  "<div class=\"renewal-actions settings-links settings-section\"><button id=\"homeLanguage\">Language<span class=\"settings-chevron\" aria-hidden=\"true\"></span></button><button id=\"renewalUpdates\">Software updates<span class=\"settings-update-dot\" aria-hidden=\"true\"></span><span class=\"settings-chevron\" aria-hidden=\"true\"></span></button><button id=\"renewalTV\">TV settings<span class=\"settings-chevron\" aria-hidden=\"true\"></span></button></div><div class=\"renewal-actions settings-developer\"><button id=\"developerOpen\" aria-controls=\"developerSettings\" aria-describedby=\"renewalSummary\"><span><span>Developer Mode</span> <span class=\"settings-beta\">Beta</span><span id=\"renewalSummary\" class=\"renewal-summary\" aria-live=\"polite\">Checking auto-renewal…</span></span><span class=\"settings-chevron\" aria-hidden=\"true\"></span></button></div><div class=\"settings-footer\"><p>Hold Back for 1.2 seconds to open LG Home.</p>",
+  "<section class=\"settings-home\"><h3>When the TV turns on</h3><p id=\"wakeStatus\" class=\"settings-status\" aria-live=\"polite\">Checking…</p><div class=\"renewal-actions home-routing-actions\"><button id=\"wakeToggle\" class=\"home-routing-switch\" role=\"switch\" aria-checked=\"false\" disabled>Open YouTube TV</button></div></section>",
+  "<div class=\"renewal-actions settings-links settings-section\"><button id=\"homeLanguage\">Language<span class=\"settings-chevron\" aria-hidden=\"true\"></span></button><button id=\"renewalUpdates\">Software updates<span class=\"settings-update-dot\" aria-hidden=\"true\"></span><span class=\"settings-chevron\" aria-hidden=\"true\"></span></button><button id=\"renewalTV\">TV settings<span class=\"settings-chevron\" aria-hidden=\"true\"></span></button></div><div class=\"renewal-actions settings-developer\"><button id=\"developerOpen\" aria-controls=\"developerSettings\" aria-describedby=\"renewalSummary\"><span><span>Developer Mode</span><span id=\"helperSummary\" class=\"helper-summary\">Renews automatically</span><span id=\"renewalSummary\" class=\"renewal-summary\" aria-live=\"polite\">Checking auto-renewal…</span></span><span class=\"settings-chevron\" aria-hidden=\"true\"></span></button></div><div class=\"settings-footer\"><p>Hold Back for 1.2 seconds to open LG Home.</p>",
   "<div class=\"renewal-actions\"><button id=\"renewalClose\">Back to Home</button></div></div>",
-  "</div><div id=\"developerSettings\" class=\"renewal-card hidden\"><div class=\"settings-heading\"><h2>Developer Mode</h2><span class=\"settings-edition\">Beta</span></div><p>Developer Mode keeps Home installed. Auto-renewal tries to extend its session while your TV is on and online.</p>",
+  "</div><div id=\"developerSettings\" class=\"renewal-card hidden\"><div class=\"settings-heading\"><h2>Developer Mode</h2></div><p>Developer Mode keeps Home installed. Home Helper renews its session with LG automatically while the TV is on and online.</p><p id=\"helperRenewal\" class=\"helper-renewal\">Checking…</p>",
   "<div class=\"renewal-actions\"><button id=\"renewalToggle\" class=\"home-routing-switch\" role=\"switch\" aria-checked=\"false\">Turn on auto-renewal</button></div><p class=\"renewal-warning\">Beta: renewal is not yet verified on no-root TVs. Keep checking the timer in the Developer Mode app.</p>",
   "<div id=\"renewalStatus\" aria-live=\"polite\">Checking auto-renewal…</div><div class=\"renewal-actions\"><button id=\"developerApp\">Open Developer Mode app</button><button id=\"renewalCheck\">Check session</button><button id=\"renewalDiagnostics\" aria-expanded=\"false\" aria-controls=\"renewalDetails\">Show diagnostics</button></div><pre id=\"renewalDetails\" class=\"hidden\"></pre><div class=\"settings-footer\"><div class=\"renewal-actions\"><button id=\"developerBack\">Back</button></div></div>",
   "</div>"
@@ -136,3 +136,21 @@
 }());
 
 });
+// Home Helper's own Developer Mode renewal (native/app/renew.js) - shown on the main settings
+// page and the Developer Mode page; the older beta auto-renewal controls are hidden (apple.css).
+(function(){
+ function clock(t){var d=new Date(t),h=d.getHours();return (h%12||12)+':'+('0'+d.getMinutes()).slice(-2)+(h<12?' AM':' PM');}
+ function update(){
+  try{var b=new PalmServiceBridge();b.onservicecallback=function(raw){var r;try{r=JSON.parse(raw);}catch(_){r=null;}try{b.cancel();}catch(_){}
+   var summary=document.getElementById('helperSummary'),detail=document.getElementById('helperRenewal');
+   if(!r||r.returnValue!==true||!r.info){if(summary)summary.textContent='Renews automatically';if(detail)detail.textContent='Waiting for Home Helper\'s first check.';return;}
+   var i=r.info,hours=typeof i.hoursLeft==='number'?i.hoursLeft+' hours left':'';
+   var line=(i.status==='renewed'?'Renewed':i.status==='ok'?'Active':'Check pending')+(hours?' · '+hours:'');
+   if(summary)summary.textContent=line;
+   if(detail)detail.textContent='Renews automatically · '+(hours||'time left unknown')+' · checked '+clock(i.time);
+  };b.call('luna://com.gathin.tvhome.renewal/renewInfo','{}');}catch(_){}
+ }
+ // Refresh each time the panel becomes visible (it is built after this file runs).
+ var wasOpen=false;
+ setInterval(function(){var panel=document.getElementById('renewalPanel'),open=!!panel&&panel.className.indexOf('hidden')<0;if(open&&!wasOpen)update();wasOpen=open;},700);
+}());

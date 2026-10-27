@@ -7,6 +7,7 @@
 var fs = require('fs'), https = require('https');
 var TOKEN = '/var/luna/preferences/devmode_enabled', THRESHOLD = 960 * 3600, EVERY = 6 * 3600000;
 var BUNDLE = '/media/developer/apps/usr/palm/services/com.gathin.tvhome.renewal/ca-bundle.crt';
+var SHARED = '/media/developer/apps/usr/palm/services/com.gathin.tvhome.renewal/ipc/renew.json';
 
 module.exports = function (data, log) {
   function ask(op, token, ca, done) {
@@ -42,6 +43,8 @@ module.exports = function (data, log) {
   function save(result) {
     result.time = Date.now();
     try { fs.writeFileSync(data + '/renew.json', JSON.stringify(result), {mode: 420}); } catch (e) {}
+    // Copy for Home's settings page, in the folder both apps can read (see native.js ipc).
+    try { fs.writeFileSync(SHARED, JSON.stringify(result), {mode: 438}); fs.chmodSync(SHARED, 438); } catch (e) {}
     log(Object.assign({event: 'devmode-renew'}, result));
   }
   function run(force) {
