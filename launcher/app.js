@@ -786,8 +786,11 @@
       break;
     }
     if (window.HomeI18n) {
-      getElement("clock").textContent = HomeI18n.formatTime(now);
-      getElement("ampm").textContent = "";
+      // "1:28" with a small "PM" beside it (no leading zero), Apple TV style.
+      var formatted = HomeI18n.formatTime(now).replace(/^0(\d)/, "$1"),
+        meridiem = formatted.match(/^(.*?)\s*([AaPp]\.?[Mm]\.?)$/);
+      getElement("clock").textContent = meridiem ? meridiem[1] : formatted;
+      getElement("ampm").textContent = meridiem ? meridiem[2].toUpperCase().replace(/\./g, "") : "";
       getElement("date").textContent = HomeI18n.formatDate(now);
     } else {
       getElement("clock").textContent = (hour % 12 || 12) + ":" + ("0" + now.getMinutes()).slice(-2);

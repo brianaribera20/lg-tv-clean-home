@@ -332,20 +332,7 @@ body.idle header, body.idle #viewport, body.idle #hero, body.idle #toast {
 
 
 /* ---- weather next to the date (weather.js) ---- */
-/* Sits on the greeting line ("Good morning · 65° Clear") so the clock row never wraps. */
-#greetingRow { display: flex; align-items: baseline; }
 
-#weather {
-  display: none;
-  color: rgba(235, 235, 245, 0.6);
-  font-size: 30px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  white-space: pre;
-}
-
-#weather.shown { display: inline; }
-#weather.shown::before { content: '  ·  '; }
 
 /* ---- scores card above the dock (scores.js) ----
    Static frosted cards; nothing here animates, so it costs no frames on this TV. */
@@ -471,45 +458,65 @@ header { will-change: transform, opacity; }
 }
 @keyframes gameday { from { opacity: 0.25; } to { opacity: 0.9; } }
 
-/* ---- weather warning capsule on the greeting line (weather.js) ---- */
+/* ==== Header layout (balanced, 27 Oct 2026) ====
+   Left: greeting, time, date stacked. Right: weather block, then round icon buttons.
+   Score cards: three equal cards spanning the same width as the header (112px margins). */
+header { align-items: flex-end; }
+
+#leftBlock { display: flex; flex-direction: column; }
+#greeting {
+  margin-left: 2px;
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: rgba(235, 235, 245, 0.6);
+  text-transform: none;
+}
+#timeRow { display: flex; align-items: baseline; margin-top: 2px; }
+#clock { font-size: 88px; font-weight: 600; letter-spacing: -0.035em; line-height: 1; }
+#ampm { margin: 0 0 0 10px; font-size: 30px; font-weight: 600; color: rgba(235, 235, 245, 0.6); text-transform: none; letter-spacing: 0; }
+#date {
+  margin: 8px 0 0 2px;
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: rgba(235, 235, 245, 0.6);
+  text-transform: none;
+  white-space: nowrap;
+}
+
+#weatherBlock {
+  margin: 0 40px 12px auto;
+  text-align: right;
+}
+#weather { display: none; font-size: 34px; font-weight: 600; letter-spacing: -0.01em; color: rgba(255, 255, 255, 0.92); white-space: pre; }
+#weather.shown { display: block; }
+#forecast { display: none; margin-top: 6px; font-size: 22px; font-weight: 600; color: rgba(235, 235, 245, 0.55); white-space: pre; }
+#forecast.shown { display: block; }
 #wxAlert {
   display: none;
-  margin-left: 18px;
+  margin-top: 10px;
   padding: 4px 14px;
   border-radius: 12px;
-  align-self: center;
   background: rgba(255, 159, 10, 0.9);
   color: #1c1c1e;
-  font-size: 20px;
+  font-size: 19px;
   font-weight: 700;
   white-space: nowrap;
 }
 #wxAlert.shown { display: inline-block; }
 #wxAlert.severe { background: rgba(255, 59, 48, 0.92); color: #fff; }
 
-/* ---- Good night button while counting down (sleep.js) ---- */
-#btnSleep.sleeping { background: rgba(94, 92, 230, 0.55); }
+/* Round icon buttons, like Apple TV's top bar; the moon shows "29 min" while counting down. */
+.pill { width: 80px; padding: 0; justify-content: center; margin-left: 16px; }
+.pill svg { margin-right: 0; }
+.pill span { display: none; }
+#btnSleep.sleeping { width: auto; padding: 0 28px 0 24px; background: rgba(94, 92, 230, 0.55); }
+#btnSleep.sleeping svg { margin-right: 12px; }
+#btnSleep.sleeping span { display: inline; }
 #btnSleep.sleeping.focused { background: #fff; }
 
-/* Forecast above the date, both beside the clock (weather.js). */
-#dateBlock { display: flex; flex-direction: column; margin-bottom: 18px; }
-#dateBlock #date { margin-bottom: 0; }
-#forecast {
-  display: none;
-  margin-bottom: 4px;
-  font-size: 24px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  color: rgba(235, 235, 245, 0.5);
-  white-space: pre;
-}
-#forecast.shown { display: block; }
-
-/* Good night: a round moon button; text only while counting down. */
-#btnSleep { padding: 0 22px; }
-#btnSleep svg { margin-right: 0; }
-#btnSleep span { display: none; }
-#btnSleep.sleeping { padding: 0 30px 0 24px; }
-#btnSleep.sleeping svg { margin-right: 14px; }
-#btnSleep.sleeping span { display: inline; }
+#scores { left: 0; right: 0; top: 215px; }  /* even ~45px gaps: header / cards / app title / dock */
+.score-card { flex: 1; width: auto; margin-left: 24px; }
+.score-card:first-child { margin-left: 0; }
 
