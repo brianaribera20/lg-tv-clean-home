@@ -3,3 +3,5 @@ window.CONFIG = {columns: 5, dockApps: ["youtube.leanback.ytv.v1", "amazon", "co
 window.CONFIG_HIDDEN = window.CONFIG.hiddenApps.slice();
 // Idle clock after an hour without a button press (clock.js). Off: Home just stays as it is.
 window.IDLE_CLOCK = false;
+// Order right after the dock (row two): Netflix, Hulu, Peacock, Alexa; everything else follows A-Z.
+window.CONFIG_ORDER = ["netflix", "hulu", "com.peacock.tv", "amazon.alexa.view"];

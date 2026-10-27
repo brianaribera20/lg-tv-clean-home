@@ -29,6 +29,8 @@
       var legacy;
       try { legacy = JSON.parse(storage.getItem('tvhome.order')); } catch (_) {}
       var first = legacy && legacy.dock === (config.dockApps || []).join(',') && Array.isArray(legacy.ids) ? legacy.ids : (config.dockApps || []).slice(0, config.columns || 4);
+      // Preferred order right after the dock (config.js CONFIG_ORDER); the rest stays alphabetical.
+      first = first.concat((typeof window !== 'undefined' && window.CONFIG_ORDER) || []);
       ids = unique(first.concat(catalog.slice().sort(function(a,b) { return a.title.localeCompare(b.title); }).map(function(a) { return a.id; })));
     }
     function visible() { return ids.map(find).filter(function(a) { return a && hidden.indexOf(a.id) < 0; }); }
