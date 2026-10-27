@@ -991,7 +991,16 @@
       getElement("wifiLabel").textContent = t;
     }
   });
-  animateTiles();
+  // Home only loads from scratch after a boot or after webOS unloaded it, when the TV is busy:
+  // the staggered fade-in stuttered there, so tiles now appear in place (animateTiles kept).
+  tiles.forEach(function (e) {
+    e.el.style.transition = "none";
+    e.el.classList.add("shown");
+  });
+  document.body.offsetWidth;
+  tiles.forEach(function (e) {
+    e.el.style.transition = "";
+  });
   focusZone = "none";
   focusTile(0);
   window.RootLauncherRendered = true;

@@ -66,6 +66,11 @@ var homeControl=require('./home-control')(fs,ipcDir);
 var wakePath=ipcDir+'/wake.json';
 function wakeEnabled(){try{return JSON.parse(fs.readFileSync(wakePath,'utf8')).enabled!==false;}catch(e){return true;}}
 function fromHome(m){var raw=m.ls2Message,id=raw&&raw.applicationID&&raw.applicationID();return typeof id==='string'&&id.split(' ')[0]==='com.gathin.tvhome';}
+// Seconds since the TV booted, so Home can tell a cold start (boot-helper.js).
+service.register('uptime',function(m){
+ if(!fromHome(m)){m.respond({returnValue:false,errorText:'caller-not-authorized'});return;}
+ try{m.respond({returnValue:true,seconds:parseFloat(fs.readFileSync('/proc/uptime','utf8'))});}catch(e){m.respond({returnValue:false,errorText:String(e.code||e)});}
+});
 service.register('wakeStatus',function(m){
  if(!fromHome(m)){m.respond({returnValue:false,errorText:'caller-not-authorized'});return;}
  m.respond({returnValue:true,enabled:wakeEnabled()});
