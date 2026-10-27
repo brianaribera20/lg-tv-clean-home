@@ -32,8 +32,8 @@ The original project's README, with its full install guide and compatibility not
   YouTube TV, and for 12 seconds after waking (15 after a cold boot) re-opens it if the TV restores
   Home on top. A
   **When the TV turns on** switch in Home → Settings turns this off.
-- **Idle timers**: after 1 hour without a button press, the clock screen (on Home); at 1 h 59 m, an
-  on-screen warning; at 2 hours, the TV turns off. LG's own screensaver is always declined. The
+- **Idle timers**: after 1 hour without a button press, the clock screen (on Home); at 4 h 59 m, an
+  on-screen warning; at 5 hours, the TV turns off. LG's own screensaver is always declined. The
   remote relay reports activity (`ACT`) for this.
 - **Developer Mode renewal from the TV** (`native/app/renew.js`): checks LG every 6 hours and resets
   the session when under 960 hours remain, which tops it back up to the ~1,000-hour maximum.

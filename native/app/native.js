@@ -187,9 +187,10 @@ var screenWatch=require('./screen-watch')(data,screenLog,function(id){
  }
 });
 
-// ---- Idle: Home's clock screen after 1 hour without remote activity, power off after 2 hours.
+// ---- Idle: Home's clock screen after 1 hour without remote activity, power off after 5 hours
+// (2 hours turned the TV off mid-show; 5 chosen 27 Oct 2026).
 // LG's own screensaver is always declined; ours replaces it once the hour has passed.
-var IDLE_CLOCK=60*60000,IDLE_WARN=119*60000,IDLE_OFF=120*60000;
+var IDLE_CLOCK=60*60000,IDLE_WARN=299*60000,IDLE_OFF=300*60000;
 var lastActivity=monotonic(),idleStage=0,screenOn=true;
 function activity(){lastActivity=monotonic();if(idleStage){log({event:'idle-reset',stage:idleStage});idleStage=0;}}
 function showClock(){idleStage=1;log({event:'idle-clock'});launch('com.gathin.tvhome',null,{screensaver:true});}
