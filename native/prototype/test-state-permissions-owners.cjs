@@ -79,7 +79,7 @@ test('recovered key enables foreground and power subscriptions with existing Bac
  a.deepEqual(socket.sent.slice(1).map(m=>m.id),['foreground','power']);
  function foreground(id,time){now=time;socket.emit('message',JSON.stringify({id:'foreground',payload:{appId:id}}));}
  foreground('test.app',0);foreground('com.webos.app.home',100);a.equal(returns,1);
- foreground('test.app',200);policy.back(true,300);policy.back(false,1400);foreground('com.webos.app.home',1500);a.equal(returns,1);
+ foreground('test.app',200);policy.back(true,300);policy.back(false,1400);foreground('com.webos.app.home',1500);a.equal(returns,2); // a long Back still comes back to Home
  socket.emit('message',JSON.stringify({id:'power',payload:{state:'Active'}}));a.equal(power,1);
  watch.close();
 });

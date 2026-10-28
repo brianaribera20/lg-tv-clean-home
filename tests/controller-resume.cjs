@@ -15,11 +15,10 @@ a.equal(run(true).extra,1);
 a.equal(run(false).extra,0);
 console.log('PASS: controller replay reproduces duplicate in baseline, suppresses it in candidate');
 
+// A long Back out of an app lands back on this Home, like a short one (since 28 Oct 2026).
 run(false,({watch,worker,calls,setNow})=>{
  watch.fg('com.example.video');worker.stdout.emit('data',Buffer.from('BACK_DOWN\n'));
- setNow(2000);watch.fg('');watch.fg('com.webos.app.home');a.equal(calls.length,1);
- worker.stdout.emit('data',Buffer.from('BACK_UP\n'));worker.stdout.emit('data',Buffer.from('HOME\n'));
- a.equal(calls.length,2);a.equal(calls[1],'com.gathin.tvhome');
- watch.fg('com.example.video');watch.fg('com.webos.app.home');a.equal(calls.length,3);
+ setNow(2000);watch.fg('');watch.fg('com.webos.app.home');a.equal(calls.length,2);a.equal(calls[1],'com.gathin.tvhome');
+ worker.stdout.emit('data',Buffer.from('BACK_UP\n'));
 });
-console.log('PASS: relay Back messages suppress redirect, short Home and ordinary exits still work');
+console.log('PASS: long Back returns to Home, short Home and ordinary exits still work');

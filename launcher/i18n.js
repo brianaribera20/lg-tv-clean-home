@@ -67,8 +67,9 @@
   }
   confirmation.children[0].children[0].textContent=t(options.title);
   confirmation.children[0].children[1].textContent=t(options.message,options.params);
-  confirmationButtons[0].textContent=t('Cancel');confirmationButtons[1].textContent=t(options.action);
-  confirmationCallback=callback;confirmationSelected=0;confirmation.hidden=false;confirmationButtons[0].focus();
+  confirmationButtons[0].textContent=t(options.cancel||'Cancel');confirmationButtons[1].textContent=t(options.action);
+  // focusAction: OK on the first press does the action (Home Helper's "Turn it back on").
+  confirmationCallback=callback;confirmationSelected=options.focusAction?1:0;confirmation.hidden=false;confirmationButtons[confirmationSelected].focus();
  }
  root.HomeI18n={ready:function(cb){if(pending)callbacks.push(cb);else cb();},languages:languages,normalize:normalize,language:function(){return active;},preference:preference,refresh:refresh,add:add,t:t,html:html,apply:apply,setLanguage:setLanguage,formatDate:formatDate,formatDateTime:formatDateTime,formatTime:formatTime,openLanguagePicker:openLanguagePicker,confirm:confirmAction};
  refresh();

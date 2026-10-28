@@ -37,7 +37,8 @@ function log(x){
  catch(e){try{console.error('Helper log failed: '+String(e));console.error(x);}catch(ignore){}}
 }
 process.on('uncaughtException',function(e){
- try{block();}catch(ignore){}
+ // A crash restarts the helper in a minute rather than leaving it off (see runtime-policy.js).
+ try{restartSoon(60000);}catch(ignore){try{block();}catch(ignore2){}}
  log({error:String(e),stack:e&&e.stack});
  setTimeout(function(){process.exit(2);},2500);
  try{if(child)child.stdin.end();}catch(ignore){}
@@ -113,11 +114,11 @@ function readHomeRequest(){
   else respond({returnValue:false,errorText:'Invalid Home request'});
  }catch(e){respond({returnValue:false,errorText:String(e)});}
 }
-function finish(code,signal){if(stopping)return;stopping=true;if(screenWatch)screenWatch.close();clearInterval(timer);log({event:'worker-exit',code:code,signal:signal});var stall=policy.isStall(code,watchdogKilled),restart=false;
- if(stall){var history=[];try{history=JSON.parse(fs.readFileSync(data+'/restarts.json','utf8'));}catch(e){}
-  var r=policy.allowRestart(history,Date.now());restart=r.allowed;try{fs.writeFileSync(data+'/restarts.json',JSON.stringify(r.history),{mode:420});}catch(e){}}
- if(restart)log({event:'stall-restart'});else if(policy.shouldBlock(code,signal))fs.writeFileSync(data+'/blocked','stopped',{mode:420});
- function end(){if(restart)restartSoon();try{fs.unlinkSync(pidPath);}catch(e){}process.exit(code===22?0:(code||0));}
+function finish(code,signal){if(stopping)return;stopping=true;if(screenWatch)screenWatch.close();clearInterval(timer);log({event:'worker-exit',code:code,signal:signal});var restart=policy.shouldRestart(code,signal,watchdogKilled),delay=policy.RESTART_DELAY;
+ if(restart){var history=[];try{history=JSON.parse(fs.readFileSync(data+'/restarts.json','utf8'));}catch(e){}
+  var r=policy.allowRestart(history,Date.now());delay=r.delay;try{fs.writeFileSync(data+'/restarts.json',JSON.stringify(r.history),{mode:420});}catch(e){}}
+ if(restart)log({event:'stall-restart',code:code,signal:signal,delay:delay});else if(policy.shouldBlock(code,signal))fs.writeFileSync(data+'/blocked','stopped',{mode:420});
+ function end(){if(restart)restartSoon(delay);try{fs.unlinkSync(pidPath);}catch(e){}process.exit(code===22?0:(code||0));}
  // Let an already-issued custom-Home request settle before the final LG launch.
  var finishDeadline=monotonic()+3200;
  function cleaned(){if(code!==22){end();return;}
@@ -128,9 +129,9 @@ function finish(code,signal){if(stopping)return;stopping=true;if(screenWatch)scr
 }
 // Start a fresh controller once this one has exited and released controller.lock. It skips the
 // Home launch, so whatever is on screen (a show in YouTube TV) stays put.
-function restartSoon(){
+function restartSoon(delay){
  try{fs.unlinkSync(data+'/blocked');}catch(e){}
- try{cp.spawn(process.execPath,['-e',"setTimeout(function(){require('child_process').spawn(process.argv[1],[process.argv[2],'--controller'],{detached:true,stdio:'ignore'}).unref();},3000)",root+'/detach',JSON.stringify({nativeHomeRestart:true})],{detached:true,stdio:'ignore'}).unref();}
+ try{cp.spawn(process.execPath,['-e',"setTimeout(function(){require('child_process').spawn(process.argv[1],[process.argv[2],'--controller'],{detached:true,stdio:'ignore'}).unref();},Number(process.argv[3])||3000)",root+'/detach',JSON.stringify({nativeHomeRestart:true}),String(delay||3000)],{detached:true,stdio:'ignore'}).unref();}
  catch(e){log({event:'stall-restart-failed',error:String(e)});block();}
 }
 var watchdogKilled=false;

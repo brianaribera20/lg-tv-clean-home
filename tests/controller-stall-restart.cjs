@@ -1,5 +1,5 @@
-// A stall (relay exit 20 or the controller's watchdog) restarts the helper without opening Home;
-// the triple-Home emergency stop (27) still latches, and repeated stalls fall back to the latch.
+// Any unexpected exit (a stall, a crash) restarts the helper without opening Home, never giving up;
+// only the five-Home emergency stop (27) or a deliberate stop (0) latches it off.
 const fs=require('fs'),vm=require('vm'),assert=require('node:assert/strict'),EventEmitter=require('events');
 const policy=require('../native/app/runtime-policy');
 const STATE='/media/developer/apps/usr/palm/applications/com.local.nativehome/state';
@@ -28,16 +28,23 @@ function run(how,history){
   let r=await run(20);
   assert.equal(r.blocked,false,'a stall must not leave the safety latch');
   assert(r.restart,'a stall must start a fresh controller');
-  assert.equal(JSON.parse(r.restart.args.at(-1)).nativeHomeRestart,true);
+  assert.equal(JSON.parse(r.restart.args.at(-2)).nativeHomeRestart,true);assert.equal(r.restart.args.at(-1),'3000');
   assert(r.log.some(e=>e.event==='stall-restart'));
   r=await run('watchdog');
   assert.equal(r.blocked,false,'a watchdog stall must not latch');assert(r.restart);
   r=await run(27);
-  assert.equal(r.blocked,true,'triple-Home must latch');assert.equal(r.restart,undefined,'triple-Home must not restart');
+  assert.equal(r.blocked,true,'five-Home must latch');assert.equal(r.restart,undefined,'five-Home must not restart');
+  r=await run(0);
+  assert.equal(r.blocked,true,'a deliberate stop must latch');assert.equal(r.restart,undefined);
+  r=await run(28);
+  assert.equal(r.blocked,false,'a crash must not latch');assert(r.restart,'a crash must restart');
+  r=await run(25);
+  assert.equal(r.restart,undefined,'power-off (remote gone) must not restart');
   const t=Date.now();r=await run(20,[t-1000,t-2000,t-3000]);
-  assert.equal(r.blocked,true,'a fourth stall within 30 minutes must latch');assert.equal(r.restart,undefined);
+  assert.equal(r.blocked,false,'a fourth stall within 30 minutes must not latch');assert(r.restart);assert.equal(r.restart.args.at(-1),'300000','repeated stalls back off to 5 minutes');
   r=await run(20,[t-31*60000,t-40*60000,t-50*60000]);
   assert.equal(r.blocked,false,'old restarts expire');assert.equal(r.history.length,1);
   assert.equal(policy.isStall(27,false),false);assert.equal(policy.isStall(20,false),true);
-  console.log('PASS stall restart: stalls restart quietly, triple-Home and repeated stalls latch');
+  assert.equal(policy.shouldRestart(27,null,false),false);assert.equal(policy.shouldRestart(26,null,false),true);
+  console.log('PASS stall restart: stalls and crashes always restart (backing off), only five-Home or a deliberate stop latches');
 })().catch(e=>{console.error(e);process.exit(1);});

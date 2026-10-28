@@ -17,8 +17,9 @@ module.exports=function(apps){
     return false;
    }
    if(id==='com.gathin.tvhome')clearBack();
-   var intentionalHome=id==='com.webos.app.home'&&!backConsumed&&
-    ((backSince!==null&&now-backSince>=700&&now-backSince<=10000)||(backUntil>0&&now<=backUntil));
+   // A long Back used to count as asking for LG Home. Since 28 Oct 2026 nothing does: only five
+   // Home presses (which stop the helper) leave this Home. Back is still tracked for diagnostics.
+   var intentionalHome=false;
    if(intentionalHome){backConsumed=true;backUntil=0;}
    var redirect=!intentionalHome&&id==='com.webos.app.home'&&apps.indexOf(previous)!==-1&&
     (gapSince===null||now-gapSince<=2500);

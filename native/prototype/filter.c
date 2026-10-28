@@ -26,12 +26,10 @@ int filter_event(struct filter*f,const struct ev*e,uint64_t now){
   int kept=0;
   for(int i=0;i<f->count;i++)if(now-f->taps[i]<=2000)f->taps[kept++]=f->taps[i];
   f->taps[kept++]=f->since;f->count=kept;
-  if(kept==3){f->count=0;return RELEASE;}
+  if(kept==HOME_TAPS){f->count=0;return RELEASE;}
  }
  return DROP;
 }
-/* A long Back opens stock Home once; it never releases the helper. */
-int filter_timeout(struct filter*f,uint64_t now){
- if(f->back&&!f->back_fired&&now>=f->back_since&&now-f->back_since>=1200){f->back_fired=1;return OPEN_LG;}
- return 0;
-}
+/* A long Back used to open LG Home. Removed 28 Oct 2026: holding Back in an app is easy to do by
+   accident, and only five Home presses may leave this Home. */
+int filter_timeout(struct filter*f,uint64_t now){(void)f;(void)now;return 0;}
