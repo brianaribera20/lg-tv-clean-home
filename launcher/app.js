@@ -833,9 +833,13 @@
         addInputRow("M18,7V4c0,-1.1 -0.9,-2 -2,-2H8C6.9,2 6,2.9 6,4v3H5v6l3,6v3h8v-3l3,-6V7H18zM8,4h8v3h-2V5h-1v2h-2V5h-1v2H8V4z", e.label, e.appId);
       }), CONFIG.liveTvApp && (inputRows.length && addInputSeparator(), addInputRow("M21,6h-7.59l3.29,-3.29L16,2l-4,4l-4,-4l-0.71,0.71L10.59,6H3c-1.1,0 -2,0.89 -2,2v12c0,1.1 0.9,2 2,2h18c1.1,0 2,-0.89 2,-2V8C23,6.89 22.1,6 21,6zM21,20H3V8h18V20zM9,10v8l7,-4L9,10z", tr("Live TV"), CONFIG.liveTvApp)), inputRows.length) {
         var e = topButtons[0].getBoundingClientRect();
-        inputsPanel.style.left = e.left + "px";
         inputsPanel.style.top = e.bottom + 20 + "px";
         inputsPanel.style.minWidth = Math.max(e.width, 300) + "px";
+        // The Inputs button sits near the right edge: start under it, but never past the
+        // header's right edge (a long name like "XBOX ONE Game Console" ran off screen).
+        var edge = topButtons[topButtons.length - 1].getBoundingClientRect().right;
+        inputsPanel.style.left = "0px"; // measure its natural width, not one squeezed by the last position
+        inputsPanel.style.left = Math.max(40, Math.min(e.left, edge - inputsPanel.offsetWidth)) + "px";
         inputsPanel.classList.remove("hidden");
         topButtons[focusedTopButton].classList.remove("focused");
         focusZone = "inputs";

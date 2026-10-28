@@ -41,8 +41,8 @@ apps, so a factory reset always puts the TV back exactly as it shipped.
 |---|---|
 | ![All apps: the dock, then Netflix, Hulu, Peacock and Alexa, then the rest A–Z](docs/screenshots/apps.jpg) | ![Home settings: Change Home, Open YouTube TV at power-on, Developer Mode hours left](docs/screenshots/settings.jpg) |
 | **All apps.** Press Down from the dock. | **Settings.** The gear button, top right. |
-| ![The Home Helper is off prompt with Turn it back on selected](docs/screenshots/helper-off.jpg) | |
-| **If the helper is off**, one OK turns it back on. | |
+| ![The Inputs menu listing the Xbox and HDMI 2](docs/screenshots/inputs.jpg) | ![The Home Helper is off prompt with Turn it back on selected](docs/screenshots/helper-off.jpg) |
+| **Inputs.** Your HDMI inputs by name. | **If the helper is off**, one OK turns it back on. |
 
 ## What you get
 
