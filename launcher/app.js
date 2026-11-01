@@ -47,7 +47,8 @@
     ambientLayers = [getElement("ambientA"), getElement("ambientB")],
     ambientIndex = 0,
     ambientColor = null,
-    topButtons = [getElement("btnInputs"), getElement("btnWifi"), getElement("btnSleep"), getElement("btnSettings")],
+    // Only the buttons this build has (the Samsung build drops Inputs, Good night and Settings).
+    topButtons = [getElement("btnInputs"), getElement("btnWifi"), getElement("btnSleep"), getElement("btnSettings")].filter(Boolean),
     inputsPanel = getElement("inputsPanel"),
     tiles = [],
     focusZone = "grid",
@@ -828,7 +829,7 @@
       window.SleepTimer && SleepTimer.toggle();
       return;
     }
-    0 === index ? function () {
+    "btnInputs" === topButtons[index].id ? function () {
       if (inputsPanel.innerHTML = "", inputRows = [], (window.TV_APPS && TV_APPS.inputs || []).forEach(function (e) {
         addInputRow("M18,7V4c0,-1.1 -0.9,-2 -2,-2H8C6.9,2 6,2.9 6,4v3H5v6l3,6v3h8v-3l3,-6V7H18zM8,4h8v3h-2V5h-1v2h-2V5h-1v2H8V4z", e.label, e.appId);
       }), CONFIG.liveTvApp && (inputRows.length && addInputSeparator(), addInputRow("M21,6h-7.59l3.29,-3.29L16,2l-4,4l-4,-4l-0.71,0.71L10.59,6H3c-1.1,0 -2,0.89 -2,2v12c0,1.1 0.9,2 2,2h18c1.1,0 2,-0.89 2,-2V8C23,6.89 22.1,6 21,6zM21,20H3V8h18V20zM9,10v8l7,-4L9,10z", tr("Live TV"), CONFIG.liveTvApp)), inputRows.length) {
@@ -847,7 +848,7 @@
       } else {
         showToast(tr("No inputs found"));
       }
-    }() : 1 === index ? openNetworkSettings() : window.RenewalPanel.open();
+    }() : "btnWifi" === topButtons[index].id ? openNetworkSettings() : window.RenewalPanel.open();
   }
   function addInputSeparator() {
     var separator = document.createElement("div");
