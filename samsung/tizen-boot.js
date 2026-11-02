@@ -109,56 +109,7 @@
   function save(l) { try { if (l && l.length) localStorage.setItem(CACHE, JSON.stringify(l)); } catch (_) {} }
   try { saved = JSON.parse(localStorage.getItem(CACHE)); } catch (_) {}
 
-  // Just after power-on the TV is so busy that Home's code takes 20+ seconds to run. So the page
-  // first shows Home as it last looked (a copy saved below), over everything, and only then starts
-  // the code; the copy is removed once the real Home has drawn underneath it.
-  var SNAP = 'samsung.snapshot', cover = showSnapshot();
-  function band(d) { var h = d.getHours(); return h < 5 ? 0 : h < 12 ? 1 : h < 17 ? 2 : h < 22 ? 3 : 0; }
-  function showSnapshot() {
-    var snap = null, now = new Date(), el, h = now.getHours();
-    try { snap = JSON.parse(localStorage.getItem(SNAP)); } catch (_) {}
-    if (!snap || !snap.html) return null;
-    el = document.createElement('div');
-    // Appended last, so Home's code still finds its own elements first by id.
-    el.style.cssText = 'position:fixed;left:0;top:0;width:100%;height:100%;overflow:hidden;z-index:2147483647;background:' + snap.background;
-    el.innerHTML = snap.html;
-    function set(sel, text) { var e = el.querySelector(sel); if (e) e.textContent = text; }
-    set('#clock', (h % 12 || 12) + ':' + ('0' + now.getMinutes()).slice(-2));
-    if (snap.ampm) set('#ampm', h < 12 ? 'AM' : 'PM');
-    if (snap.day !== now.toDateString()) set('#date', '');
-    if (snap.band !== band(now)) set('#greeting', '');
-    document.body.appendChild(el);
-    return el;
-  }
-  function takeSnapshot() {
-    var copy = document.body.cloneNode(true), ampm = document.getElementById('ampm'), look = getComputedStyle(document.body);
-    Array.prototype.slice.call(copy.querySelectorAll('script')).forEach(function (e) { e.parentNode.removeChild(e); });
-    if (cover && cover.parentNode === document.body) copy.removeChild(copy.lastElementChild);
-    try {
-      localStorage.setItem(SNAP, JSON.stringify({html: copy.innerHTML, background: (look.backgroundImage === 'none' ? '' : look.backgroundImage + ' ') + look.backgroundColor,
-        day: new Date().toDateString(), band: band(new Date()), ampm: !!(ampm && ampm.textContent)}));
-    } catch (_) {}
-  }
-  // After two frames, or after ms when no frames come (a page opened behind the TV's own start-up).
-  function afterPaint(ms, fn) {
-    var done = false;
-    function go() { if (!done) { done = true; fn(); } }
-    requestAnimationFrame(function () { requestAnimationFrame(function () { setTimeout(go, 0); }); });
-    setTimeout(go, ms);
-  }
-  function drawn() {
-    afterPaint(1000, function () {
-      if (cover && cover.parentNode) cover.parentNode.removeChild(cover);
-      cover = null;
-      // Once weather and the rest have filled in; and again whenever Home goes to the background.
-      setTimeout(takeSnapshot, 8000);
-      document.addEventListener('visibilitychange', function () { if (document.hidden) takeSnapshot(); });
-    });
-  }
-
-  // Start at once: the TV only shows the page once Samsung's own "Loading" screen ends, and
-  // waiting for that first frame made the start slower, not faster.
-  setTimeout(begin, 0);
+  begin();
   function begin() {
     if (saved && saved.length) {
       later = [];
@@ -179,7 +130,7 @@
     window.CONFIG_HIDDEN = ids(window.CONFIG_HIDDEN);
     window.CONFIG_ORDER = ids(window.CONFIG_ORDER);
     load(['i18n.js', 'catalogs.js', 'app-library.js', 'user-data.js', 'clock.js', 'orbs.js', 'weather.js'], function () {
-      (window.HomeI18n ? HomeI18n.ready : function (cb) { cb(); })(function () { load(['app.js'], drawn); });
+      (window.HomeI18n ? HomeI18n.ready : function (cb) { cb(); })(function () { load(['app.js'], function () {}); });
     });
   }
 }());

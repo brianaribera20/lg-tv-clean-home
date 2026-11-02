@@ -65,8 +65,7 @@ refused ("Invalid certificate chain"). What does work:
 Either way the TV shows its own start-up (and its "Loading" card for the app) first; measured
 on a 2020 Q70, Home is on screen 10 to 25 seconds after the power button, most of it the TV
 booting. To start fast, Home draws from the app list it saved last time instead of waiting
-for the TV's (which takes 5+ seconds and freezes the page), and puts up a saved copy of its
-last screen until its code has run.
+for the TV's (which takes 5+ seconds and freezes the page).
 
 ## Change it
 
