@@ -133,7 +133,9 @@
     // the translations come once Home is on screen (English needs none).
     load(['home.js'], function () {
       (window.HomeI18n ? HomeI18n.ready : function (cb) { cb(); })(function () {
+        document.body.className += ' af-starting';
         load(['app.js'], function () {
+          setTimeout(function () { document.body.className = document.body.className.replace(' af-starting', ''); }, 10000);
           setTimeout(function () {
             load(['catalogs.js'], function () { if (window.HomeI18n && HomeI18n.language() !== 'en') { HomeI18n.refresh(); HomeI18n.apply(document); } });
           }, 8000);

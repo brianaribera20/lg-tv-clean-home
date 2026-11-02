@@ -78,6 +78,8 @@ def main():
     # starves Home of disk time, and every separate read costs seconds there. catalogs.js (the
     # translations, 200 KB) stays apart and loads once Home is on screen.
     css = ''.join((OUT / n).read_text(encoding='utf-8') + '\n' for n in ['style.css', 'i18n.css', 'apple.css', 'samsung.css'])
+    # Text draws in the fallback font at once instead of waiting for the font file (slow at power-on).
+    css = re.sub(r'(@font-face\s*\{)', r'\1font-display:swap;', css)
     (OUT / 'home.css').write_text(css, encoding='utf-8')
     html = re.sub(r'  <link rel="stylesheet" href="(style|i18n|apple)\.css">\n', '', html)
     html = html.replace('</head>', '  <link rel="stylesheet" href="home.css">\n</head>')
