@@ -129,8 +129,16 @@
     CONFIG.hiddenApps = ids(CONFIG.hiddenApps);
     window.CONFIG_HIDDEN = ids(window.CONFIG_HIDDEN);
     window.CONFIG_ORDER = ids(window.CONFIG_ORDER);
-    load(['i18n.js', 'catalogs.js', 'app-library.js', 'user-data.js', 'clock.js', 'orbs.js', 'weather.js'], function () {
-      (window.HomeI18n ? HomeI18n.ready : function (cb) { cb(); })(function () { load(['app.js'], function () {}); });
+    // home.js is i18n, app-library, user-data, clock, orbs and weather in one file (build.py);
+    // the translations come once Home is on screen (English needs none).
+    load(['home.js'], function () {
+      (window.HomeI18n ? HomeI18n.ready : function (cb) { cb(); })(function () {
+        load(['app.js'], function () {
+          setTimeout(function () {
+            load(['catalogs.js'], function () { if (window.HomeI18n && HomeI18n.language() !== 'en') { HomeI18n.refresh(); HomeI18n.apply(document); } });
+          }, 8000);
+        });
+      });
     });
   }
 }());

@@ -19,6 +19,8 @@ COPY = ['style.css', 'i18n.css', 'apple.css', 'i18n.js', 'catalogs.js', 'app-lib
         'clock.js', 'orbs.js', 'weather.js', 'app.js', 'app-colors.js', 'fonts']
 # Header buttons with nothing behind them on Samsung (LG inputs, LG power-off, LG settings panel).
 DROP_PILLS = ['btnInputs', 'btnSleep', 'btnSettings']
+# Start-up scripts merged into home.js, in this order.
+BUNDLE = ['i18n.js', 'app-library.js', 'user-data.js', 'clock.js', 'orbs.js', 'weather.js']
 
 
 def env():
@@ -68,10 +70,21 @@ def main():
     for pill in DROP_PILLS:
         html = re.sub(r'\s*<div class="pill" id="%s">.*?</span>\s*</div>' % pill, '', html, flags=re.S)
     scripts = ['config.js', 'local.js', 'app-colors.js'] + (['preview-tizen.js'] if PREVIEW else []) + ['tizen-boot.js']
-    tags = '\n'.join('  <script src="%s"></script>' % s for s in scripts)
-    html = re.sub(r'  <script src="config.js"></script>.*</script>', tags, html, flags=re.S)
+    # Inlined: four fewer files to read at start.
+    tags = '<script>\n' + '\n;\n'.join((OUT / s).read_text(encoding='utf-8') for s in scripts) + '\n</script>'
+    html = re.sub(r'  <script src="config.js"></script>.*</script>', lambda _: tags, html, flags=re.S)
     html = re.sub(r'\s*<link rel="stylesheet" href="renewal-panel.css">', '', html)
-    html = html.replace('<link rel="stylesheet" href="apple.css">', '<link rel="stylesheet" href="apple.css">\n  <link rel="stylesheet" href="samsung.css">')
+    # One stylesheet and one start-up script instead of a dozen files: just after power-on the TV
+    # starves Home of disk time, and every separate read costs seconds there. catalogs.js (the
+    # translations, 200 KB) stays apart and loads once Home is on screen.
+    css = ''.join((OUT / n).read_text(encoding='utf-8') + '\n' for n in ['style.css', 'i18n.css', 'apple.css', 'samsung.css'])
+    (OUT / 'home.css').write_text(css, encoding='utf-8')
+    html = re.sub(r'  <link rel="stylesheet" href="(style|i18n|apple)\.css">\n', '', html)
+    html = html.replace('</head>', '  <link rel="stylesheet" href="home.css">\n</head>')
+    bundle = ''.join((OUT / n).read_text(encoding='utf-8') + '\n;\n' for n in BUNDLE)
+    (OUT / 'home.js').write_text(bundle, encoding='utf-8')
+    for n in ['style.css', 'i18n.css', 'apple.css', 'samsung.css'] + BUNDLE + scripts:
+        (OUT / n).unlink()
     (OUT / 'index.html').write_text(html, encoding='utf-8')
 
     title = local.get('SAMSUNG_APP_TITLE') or local.get('TV_APP_TITLE') or 'Home'
