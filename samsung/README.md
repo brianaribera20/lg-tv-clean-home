@@ -41,18 +41,32 @@ Tested on a 2020 Q70 (Tizen 5.5).
 
 ## Open Home when the TV turns on
 
-Samsung never starts a sideloaded app at power-on, so a Mac on the same network does it:
+Samsung never starts a sideloaded app at power-on: the `on-boot` service flag is ignored with
+the certificate Developer Mode accepts, and the partner certificate that would honour it is
+refused ("Invalid certificate chain"). What does work:
 
-```bash
-./samsung/autostart.sh --install   # LaunchAgent com.local.samsung-home; --remove undoes it
-```
+1. **Autorun Last App** (TV only, nothing else needed). Settings → General → Smart Features →
+   Autorun Last App On, Autorun Smart Hub Off, Autorun Samsung TV Plus Off. The TV then
+   reopens whatever was on screen when it was turned off, Home included. Turn the TV off
+   while Home (or the app you want back) is showing.
+2. **A Mac on the same network** for the other cases (the TV was turned off from a menu or an
+   input):
 
-It watches the TV's power state and, each time the TV comes on, opens Home through the TV's
-own web API, keeps it in front for 30 seconds (Samsung's start-up can open over it), then
-leaves the TV alone. It keeps the Mac awake while plugged in; an asleep or absent Mac means
-the TV stays on Samsung's screen. Log: `~/Library/Logs/samsung-home-autostart.log`.
-It uses only `curl`: macOS lets Apple's own tools reach the local network from a
-LaunchAgent, but `sdb` hangs there. Tests: `bash tests/samsung-autostart.sh` (fake TV).
+   ```bash
+   ./samsung/autostart.sh --install   # LaunchAgent com.local.samsung-home; --remove undoes it
+   ```
+
+   It watches the TV's power state and, each time the TV comes on, opens Home through the
+   TV's own web API, keeps it in front for 30 seconds, then leaves the TV alone. It keeps the
+   Mac awake while plugged in. Log: `~/Library/Logs/samsung-home-autostart.log`. It uses only
+   `curl`: macOS lets Apple's own tools reach the local network from a LaunchAgent, but `sdb`
+   hangs there. Tests: `bash tests/samsung-autostart.sh` (fake TV).
+
+Either way the TV shows its own start-up (and its "Loading" card for the app) first; measured
+on a 2020 Q70, Home is on screen 10 to 25 seconds after the power button, most of it the TV
+booting. To start fast, Home draws from the app list it saved last time instead of waiting
+for the TV's (which takes 5+ seconds and freezes the page), and puts up a saved copy of its
+last screen until its code has run.
 
 ## Change it
 
