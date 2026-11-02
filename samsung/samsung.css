@@ -1,5 +1,0 @@
-/* Samsung build only: the page is a fixed 1920x1080 TV canvas, as on webOS. */
-html, body { width: 1920px; height: 1080px; overflow: hidden; }
-
-/* The drifting glow waits until Home has drawn (tizen-boot.js removes the class). */
-body.af-starting .orb { animation-play-state: paused; }
