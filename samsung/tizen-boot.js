@@ -20,7 +20,10 @@
     return null;
   }
 
-  function list(done) {
+  function list(callback) {
+    // Just after power-on the TV can be slow to answer; Home then starts from its saved layout.
+    var finished = false, timer = setTimeout(function () { done(null); }, 5000);
+    function done(l) { if (finished) return; finished = true; clearTimeout(timer); callback(l); }
     if (!T || !T.application) { done(null); return; }
     try {
       T.application.getAppsInfo(function (infos) {
@@ -59,7 +62,13 @@
       T.application.launch(id, function () { reply({returnValue: true}); },
         function (e) { reply({returnValue: false, errorText: e && e.message}); });
     },
-    'com.palm.connectionmanager/getStatus': function (p, reply) { wifi(reply); }
+    'com.palm.connectionmanager/getStatus': function (p, reply) {
+      wifi(reply);
+      // Home can open before the TV is back on Wi-Fi: report again whenever the network changes.
+      if (p.subscribe) ['WIFI_NETWORK', 'ETHERNET_NETWORK'].forEach(function (name) {
+        try { T.systeminfo.addPropertyValueChangeListener(name, function () { wifi(reply); }); } catch (_) {}
+      });
+    }
   };
 
   function Bridge() { this.onservicecallback = null; this.cancelled = false; }
@@ -75,8 +84,7 @@
   Bridge.prototype.cancel = function () { this.cancelled = true; };
   window.PalmServiceBridge = Bridge;
 
-  // Back is 10009 on a Samsung remote (the build maps webOS's 461 to it). Home never exits on
-  // Back; the remote's Home button leaves for Smart Hub as usual.
+  // Home's own id, kept out of its tile list.
   try { self = T.application.getCurrentApplication().appInfo.id; } catch (_) {}
 
   function load(srcs, done) {
@@ -87,7 +95,13 @@
     document.body.appendChild(s);
   }
 
+  // The last app list the TV gave, so a slow start still shows the full Home.
+  var CACHE = 'samsung.apps';
   list(function (l) {
+    try {
+      if (l && l.length) localStorage.setItem(CACHE, JSON.stringify(l));
+      else l = JSON.parse(localStorage.getItem(CACHE)) || l;
+    } catch (_) {}
     apps = l || [];
     window.TV_APPS = {apps: apps, inputs: []};
     // Titles in config.js -> ids; a title that is not installed simply drops out.

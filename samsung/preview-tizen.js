@@ -8,7 +8,8 @@
   });
   window.tizen = {
     application: {
-      getAppsInfo: function (ok) { setTimeout(function () { ok(apps); }, 50); },
+      // ?stall: never answer, like a TV that is still starting up.
+      getAppsInfo: function (ok) { if (!/stall/.test(location.search)) setTimeout(function () { ok(apps); }, 50); },
       launch: function (id, ok) { console.log('[preview] launch', id); setTimeout(ok, 0); },
       getCurrentApplication: function () { return {appInfo: {id: 'CleanHome1.Home'}}; }
     },

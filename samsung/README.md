@@ -39,6 +39,21 @@ Tested on a 2020 Q70 (Tizen 5.5).
    ./samsung/install.sh
    ```
 
+## Open Home when the TV turns on
+
+Samsung never starts a sideloaded app at power-on, so a Mac on the same network does it:
+
+```bash
+./samsung/autostart.sh --install   # LaunchAgent com.local.samsung-home; --remove undoes it
+```
+
+It watches the TV's power state and, each time the TV comes on, opens Home through the TV's
+own web API, keeps it in front for 30 seconds (Samsung's start-up can open over it), then
+leaves the TV alone. It keeps the Mac awake while plugged in; an asleep or absent Mac means
+the TV stays on Samsung's screen. Log: `~/Library/Logs/samsung-home-autostart.log`.
+It uses only `curl`: macOS lets Apple's own tools reach the local network from a
+LaunchAgent, but `sdb` hangs there. Tests: `bash tests/samsung-autostart.sh` (fake TV).
+
 ## Change it
 
 - Dock, row two and hidden apps: `samsung/config.js`, by the app's title on the TV.

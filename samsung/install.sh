@@ -11,6 +11,8 @@ PROFILE="${SAMSUNG_CERT_PROFILE:-tizenhome}"   # signing profile (a plain Tizen 
 CLI="$TIZEN/tools/ide/bin/tizen" SDB="$TIZEN/tools/sdb"
 
 python3 samsung/build.py
+# A server left over from before the TV last went off holds a dead connection the TV refuses.
+"$SDB" kill-server >/dev/null 2>&1 || true
 "$SDB" connect "$HOST:26101"
 TARGET=$("$SDB" devices | awk -v h="$HOST:26101" '$1 == h {print $3}')
 : "${TARGET:?The TV did not accept the connection: check Developer Mode and its Host PC IP}"
